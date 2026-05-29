@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-2xl mx-auto">
+  <div class="w-5/5 mx-auto">
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-xl font-bold text-gray-900">
         {{ cert ? 'Редактировать сертификат' : 'Новый сертификат' }}
@@ -50,12 +50,30 @@
           </div>
         </div>
 
-        <div class="mb-4">
-          <label class="block text-xs font-semibold text-gray-600 mb-1">
-            Тип / модель
-          </label>
-          <input v-model="form.type_model" type="text" placeholder="ВСХ-15"
-            class="w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors border-gray-300 focus:border-blue-500" />
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Тип / модель</label>
+            <input v-model="form.type_model" type="text" placeholder="ВСХ-15"
+              class="w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors border-gray-300 focus:border-blue-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Изготовитель</label>
+            <input v-model="form.manufacturer" type="text"
+              class="w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors border-gray-300 focus:border-blue-500" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Методика поверки</label>
+            <input v-model="form.verification_method" type="text"
+              class="w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors border-gray-300 focus:border-blue-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Поверитель</label>
+            <input v-model="form.verifier" type="text"
+              class="w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors border-gray-300 focus:border-blue-500" />
+          </div>
         </div>
 
         <div class="grid grid-cols-3 gap-4 mb-4">
@@ -111,9 +129,7 @@
               :class="form.errors.address ? 'border-red-400' : 'border-gray-300 focus:border-blue-500'" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1">
-              Номер телефона
-            </label>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Номер телефона</label>
             <input v-model="form.phone" type="text"
               placeholder="+7 (700) 000-00-00"
               class="w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors"
@@ -126,7 +142,7 @@
         <!-- Даты -->
         <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Даты поверки</p>
 
-        <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="grid grid-cols-2 gap-4 mb-5">
           <div>
             <label class="block text-xs font-semibold text-gray-600 mb-1">Дата поверки</label>
             <input v-model="form.check_date" @input="formatDate" type="text"
@@ -143,6 +159,108 @@
               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-500 cursor-not-allowed" />
           </div>
         </div>
+
+        <!-- Данные о поверке (аккордеон) -->
+        <div class="my-5 rounded-xl border-2 transition-colors"
+          :class="showReadings ? 'border-blue-200 bg-blue-50/30' : 'border-dashed border-blue-300 bg-blue-50/50 hover:border-blue-400'">
+
+          <button type="button" @click="showReadings = !showReadings"
+            class="flex items-center justify-between w-full text-left px-4 py-3 group">
+            <div class="flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors"
+                :class="showReadings ? 'bg-blue-100 text-blue-500' : 'bg-blue-200 text-blue-600'">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                </svg>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-blue-700">Данные о поверке</p>
+                <p class="text-xs text-blue-500/80 mt-0.5">
+                  <template v-if="form.readings.length === 0">Нажмите чтобы добавить показания</template>
+                  <template v-else>{{ form.readings.length }} строк · нажмите чтобы {{ showReadings ? 'скрыть' : 'редактировать' }}</template>
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span v-if="form.readings.length === 0 && !showReadings"
+                class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+                Не заполнено
+              </span>
+              <span v-else-if="form.readings.length > 0 && !showReadings"
+                class="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 border border-green-200">
+                {{ form.readings.length }} строк
+              </span>
+              <svg class="w-4 h-4 text-blue-400 transition-transform duration-200 flex-shrink-0"
+                :class="showReadings ? 'rotate-180' : ''"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </div>
+          </button>
+
+        <div v-show="showReadings" class="px-4 pb-4">
+          <div class="overflow-x-auto rounded-lg border border-gray-200">
+            <table class="text-xs border-collapse w-full">
+              <thead>
+                <tr class="bg-gray-50 text-gray-600">
+                  <th rowspan="2" class="border border-gray-200 px-2 py-1.5 font-semibold text-center align-middle w-8">№</th>
+                  <th rowspan="2" class="border border-gray-200 px-2 py-1.5 font-semibold text-center align-middle w-12">DN мм</th>
+                  <th colspan="3" class="border border-gray-200 px-2 py-1.5 font-semibold text-center">Qmin (Qнаим) 0,03 м³/ч</th>
+                  <th colspan="3" class="border border-gray-200 px-2 py-1.5 font-semibold text-center">1,1Qn (Qр) 0,12 м³/ч</th>
+                  <th colspan="3" class="border border-gray-200 px-2 py-1.5 font-semibold text-center">Qmax (Qн) 1,5 м³/ч</th>
+                  <th rowspan="2" class="border border-gray-200 px-2 py-1.5 font-semibold text-center align-middle w-16">До поверки м³</th>
+                  <th rowspan="2" class="border border-gray-200 px-2 py-1.5 font-semibold text-center align-middle w-16">После поверки м³</th>
+                  <th rowspan="2" class="border border-gray-200 w-6"></th>
+                </tr>
+                <tr class="bg-gray-50 text-gray-500">
+                  <th class="border border-gray-200 px-1.5 py-1 font-medium text-center w-14">Счётчик дм³</th>
+                  <th class="border border-gray-200 px-1.5 py-1 font-medium text-center w-14">Эталон дм³</th>
+                  <th class="border border-gray-200 px-1.5 py-1 font-medium text-center w-14">Погреш. %</th>
+                  <th class="border border-gray-200 px-1.5 py-1 font-medium text-center w-14">Счётчик дм³</th>
+                  <th class="border border-gray-200 px-1.5 py-1 font-medium text-center w-14">Эталон дм³</th>
+                  <th class="border border-gray-200 px-1.5 py-1 font-medium text-center w-14">Погреш. %</th>
+                  <th class="border border-gray-200 px-1.5 py-1 font-medium text-center w-14">Счётчик дм³</th>
+                  <th class="border border-gray-200 px-1.5 py-1 font-medium text-center w-14">Эталон дм³</th>
+                  <th class="border border-gray-200 px-1.5 py-1 font-medium text-center w-14">Погреш. %</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(row, i) in form.readings" :key="i" class="hover:bg-gray-50">
+                  <td class="border border-gray-200 p-0.5 text-center text-gray-500 text-xs">{{ i + 1 }}</td>
+                  <td class="border border-gray-200 p-0.5"><input v-model="row.dn"      type="text" class="w-full px-1.5 py-1 text-center text-xs outline-none focus:bg-blue-50 rounded" /></td>
+                  <td class="border border-gray-200 p-0.5"><input v-model="row.qmin_s"  type="text" @change="autoCalc(row, 'qmin')"  class="w-full px-1.5 py-1 text-center text-xs outline-none focus:bg-blue-50 rounded" /></td>
+                  <td class="border border-gray-200 p-0.5 bg-gray-50"><input v-model="row.qmin_e"  type="text" readonly class="w-full px-1.5 py-1 text-center text-xs outline-none bg-transparent text-gray-500 cursor-default" /></td>
+                  <td class="border border-gray-200 p-0.5 bg-gray-50"><input v-model="row.qmin_p"  type="text" readonly class="w-full px-1.5 py-1 text-center text-xs outline-none bg-transparent text-gray-500 cursor-default" /></td>
+                  <td class="border border-gray-200 p-0.5"><input v-model="row.qn_s"    type="text" @change="autoCalc(row, 'qn')"    class="w-full px-1.5 py-1 text-center text-xs outline-none focus:bg-blue-50 rounded" /></td>
+                  <td class="border border-gray-200 p-0.5 bg-gray-50"><input v-model="row.qn_e"    type="text" readonly class="w-full px-1.5 py-1 text-center text-xs outline-none bg-transparent text-gray-500 cursor-default" /></td>
+                  <td class="border border-gray-200 p-0.5 bg-gray-50"><input v-model="row.qn_p"    type="text" readonly class="w-full px-1.5 py-1 text-center text-xs outline-none bg-transparent text-gray-500 cursor-default" /></td>
+                  <td class="border border-gray-200 p-0.5"><input v-model="row.qmax_s"  type="text" @change="autoCalc(row, 'qmax')"  class="w-full px-1.5 py-1 text-center text-xs outline-none focus:bg-blue-50 rounded" /></td>
+                  <td class="border border-gray-200 p-0.5 bg-gray-50"><input v-model="row.qmax_e"  type="text" readonly class="w-full px-1.5 py-1 text-center text-xs outline-none bg-transparent text-gray-500 cursor-default" /></td>
+                  <td class="border border-gray-200 p-0.5 bg-gray-50"><input v-model="row.qmax_p"  type="text" readonly class="w-full px-1.5 py-1 text-center text-xs outline-none bg-transparent text-gray-500 cursor-default" /></td>
+                  <td class="border border-gray-200 p-0.5"><input v-model="row.before_val" type="text" class="w-full px-1.5 py-1 text-center text-xs outline-none focus:bg-blue-50 rounded" /></td>
+                  <td class="border border-gray-200 p-0.5"><input v-model="row.after_val"  type="text" class="w-full px-1.5 py-1 text-center text-xs outline-none focus:bg-blue-50 rounded" /></td>
+                  <td class="border border-gray-200 p-0.5 text-center">
+                    <button type="button" @click="removeReadingRow(i)"
+                      class="w-5 h-5 flex items-center justify-center text-gray-300 hover:text-red-400 transition-colors mx-auto">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  </td>
+                </tr>
+                <tr v-if="form.readings.length === 0">
+                  <td colspan="15" class="border border-gray-200 px-4 py-3 text-center text-xs text-gray-400">
+                    Нет строк — нажмите «+ Добавить строку»
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <button type="button" @click="addReadingRow"
+            class="mt-2 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Добавить строку
+          </button>
+        </div>
+        </div><!-- /accordion wrapper -->
 
         <!-- Кнопка сохранения -->
         <button type="submit" :disabled="form.processing"
@@ -194,16 +312,22 @@
           <div class="border border-gray-200 rounded-lg p-3">
             <p class="text-xs font-semibold text-gray-500 mb-2">Протокол</p>
             <div class="flex gap-2">
-              <button disabled
-                class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-gray-100 text-gray-400 font-semibold rounded-md text-xs cursor-not-allowed">
+              <a :href="`/certificate/${cert.id}/protocol/word`"
+                class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md text-xs transition-colors">
                 <IconDownload />
                 WORD
-              </button>
-              <button disabled
-                class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-gray-100 text-gray-400 font-semibold rounded-md text-xs cursor-not-allowed">
+              </a>
+              <a v-if="pdfAvailable" :href="`/certificate/${cert.id}/protocol/pdf`"
+                class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-md text-xs transition-colors">
                 <IconDownload />
                 PDF
-              </button>
+              </a>
+              <span v-else
+                class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-gray-100 text-gray-400 font-semibold rounded-md text-xs cursor-not-allowed"
+                title="Недоступно на Windows">
+                <IconDownload />
+                PDF
+              </span>
             </div>
           </div>
 
@@ -241,7 +365,7 @@
 
 <script setup>
 import { useForm, usePage } from '@inertiajs/vue3'
-import { computed, defineComponent, h } from 'vue'
+import { computed, defineComponent, h, ref } from 'vue'
 
 const IconDownload = defineComponent({
   render: () => h('svg', { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2.2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
@@ -256,53 +380,70 @@ const props = defineProps({
 })
 
 const page = usePage()
-const flash = computed(() => page.props.flash ?? {})
+const flash        = computed(() => page.props.flash ?? {})
 const pdfAvailable = computed(() => page.props.pdfAvailable)
-const isLocal = computed(() => page.props.isLocal)
+const isLocal      = computed(() => page.props.isLocal)
 
-function fillRandom() {
-  const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
-  const pick = arr => arr[rand(0, arr.length - 1)]
+const showReadings = ref(false)
 
-  const surnames = ['Иванов', 'Петров', 'Сидоров', 'Ахметов', 'Нурмагамбетов', 'Байжанов', 'Касымов', 'Жумабеков']
-  const initials = ['А. Б.', 'С. Т.', 'Д. Е.', 'К. М.', 'Н. О.', 'Р. В.', 'И. Г.', 'Ю. Л.']
-  const streets = ['мкр. Береке д. 12 кв. 5', 'мкр. Аль-Фараби д. 34 кв. 18', 'ул. Алтынсарина д. 7 кв. 3', 'мкр. Юбилейный д. 56 кв. 101', 'ул. Байтурсынова д. 9 кв. 47']
-  const models = ['ВСХ-15', 'ВСХ-20', 'ВСКМ-15', 'СХВ-15Г', 'МТК-Т-15', 'ВСГ-15']
-  const classes = ['В', 'Г', 'А']
+function emptyRow() {
+  return { dn: '', qmin_s: '', qmin_e: '', qmin_p: '', qn_s: '', qn_e: '', qn_p: '', qmax_s: '', qmax_e: '', qmax_p: '', before_val: '', after_val: '' }
+}
 
-  const day = String(rand(1, 28)).padStart(2, '0')
-  const month = String(rand(1, 12)).padStart(2, '0')
-  const year = rand(2023, 2026)
-  const zavodNum = String(rand(1000000, 9999999))
-  const certSuffix = String(rand(1000000, 9999999))
-  const phone2 = String(rand(700, 777))
-  const phone3 = String(rand(1000000, 9999999))
+function calcEtalonAndErr(counter, maxErr) {
+  const val = parseFloat(counter)
+  if (isNaN(val) || val <= 0) return { e: '', p: '' }
+  const sign = Math.random() > 0.4 ? 1 : -1
+  const p    = sign * (Math.random() * maxErr * 0.75 + maxErr * 0.05)
+  const e    = Math.round((val / (1 + p / 100)) * 1000) / 1000
+  const actualP = Math.round(((val - e) / e) * 10000) / 100
+  return { e: e.toString(), p: actualP.toString() }
+}
 
-  form.cert_number  = `VM-07-${String(year).slice(2)}-${certSuffix}`
-  form.zavod_number = zavodNum
-  form.type_model   = pick(models)
-  form.make_year    = `${rand(2018, 2023)}г.`
-  form.class        = pick(classes)
-  form.plomb_number = String(rand(10000, 99999))
-  form.water_data   = rand(0, 9999)
-  form.fio          = `${pick(surnames)} ${pick(initials)}`
-  form.address      = `г. Костанай, ${pick(streets)}`
-  form.phone        = `+7 (${phone2}) ${phone3.slice(0,3)}-${phone3.slice(3,5)}-${phone3.slice(5,7)}`
-  form.check_date   = `${day}.${month}.${year}`
+function autoCalc(row, group) {
+  const maxErr = group === 'qmin' ? 5 : 2
+  const { e, p } = calcEtalonAndErr(row[`${group}_s`], maxErr)
+  row[`${group}_e`] = e
+  row[`${group}_p`] = p
+}
+
+function addReadingRow() {
+  form.readings.push(emptyRow())
+}
+
+function removeReadingRow(index) {
+  form.readings.splice(index, 1)
 }
 
 const form = useForm({
-  cert_number:  props.cert?.cert_number  ?? 'VM-07-26-',
-  zavod_number: props.cert?.zavod_number ?? '',
-  type_model:   props.cert?.type_model   ?? '',
-  make_year:    props.cert?.make_year    ?? '2019г.',
-  fio:          props.cert?.fio          ?? '',
-  address:      props.cert?.address      ?? '',
-  phone:        props.cert?.phone        ?? '',
-  water_data:   props.cert?.water_data   ?? '',
-  class:        props.cert?.class        ?? 'В',
-  check_date:   props.cert?.check_date   ?? '',
-  plomb_number: props.cert?.plomb_number ?? '',
+  cert_number:         props.cert?.cert_number         ?? 'VM-07-26-',
+  zavod_number:        props.cert?.zavod_number        ?? '',
+  type_model:          props.cert?.type_model          ?? '',
+  manufacturer:        props.cert?.manufacturer        ?? 'ООО "Телематические Решения", г. Москва, Российская Федерация',
+  verification_method: props.cert?.verification_method ?? 'СТ РК 2.86-2005',
+  verifier:            props.cert?.verifier            ?? 'Карабаев А.',
+  make_year:           props.cert?.make_year           ?? '2019г.',
+  fio:                 props.cert?.fio                 ?? '',
+  address:             props.cert?.address             ?? '',
+  phone:               props.cert?.phone               ?? '',
+  water_data:          props.cert?.water_data          ?? '',
+  class:               props.cert?.class               ?? 'В',
+  check_date:          props.cert?.check_date          ?? '',
+  plomb_number:        props.cert?.plomb_number        ?? '',
+  readings: (props.cert?.readings ?? []).map(r => ({
+    dn:         r.dn         ?? '',
+    qmin_s:     r.qmin_s     ?? '',
+    qmin_e:     r.qmin_e     ?? '',
+    qmin_p:     r.qmin_p     ?? '',
+    qn_s:       r.qn_s       ?? '',
+    qn_e:       r.qn_e       ?? '',
+    qn_p:       r.qn_p       ?? '',
+    qmax_s:     r.qmax_s     ?? '',
+    qmax_e:     r.qmax_e     ?? '',
+    qmax_p:     r.qmax_p     ?? '',
+    before_val: r.before_val ?? '',
+    after_val:  r.after_val  ?? '',
+  })),
 })
 
 const finalDate = computed(() => {
@@ -317,6 +458,40 @@ function formatDate(e) {
   if (digits.length > 2) masked += '.' + digits.substring(2, 4)
   if (digits.length > 4) masked += '.' + digits.substring(4, 8)
   form.check_date = masked
+}
+
+function fillRandom() {
+  const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
+  const pick = arr => arr[rand(0, arr.length - 1)]
+
+  const surnames = ['Иванов', 'Петров', 'Сидоров', 'Ахметов', 'Нурмагамбетов', 'Байжанов', 'Касымов', 'Жумабеков']
+  const initials = ['А. Б.', 'С. Т.', 'Д. Е.', 'К. М.', 'Н. О.', 'Р. В.', 'И. Г.', 'Ю. Л.']
+  const streets  = ['мкр. Береке д. 12 кв. 5', 'мкр. Аль-Фараби д. 34 кв. 18', 'ул. Алтынсарина д. 7 кв. 3', 'мкр. Юбилейный д. 56 кв. 101', 'ул. Байтурсынова д. 9 кв. 47']
+  const models   = ['ВСХ-15', 'ВСХ-20', 'ВСКМ-15', 'СХВ-15Г', 'МТК-Т-15', 'ВСГ-15']
+  const classes  = ['В', 'Г', 'А']
+
+  const day   = String(rand(1, 28)).padStart(2, '0')
+  const month = String(rand(1, 12)).padStart(2, '0')
+  const year  = rand(2023, 2026)
+  const zavodNum    = String(rand(1000000, 9999999))
+  const certSuffix  = String(rand(1000000, 9999999))
+  const phone2      = String(rand(700, 777))
+  const phone3      = String(rand(1000000, 9999999))
+
+  form.cert_number         = `VM-07-${String(year).slice(2)}-${certSuffix}`
+  form.zavod_number        = zavodNum
+  form.type_model          = pick(models)
+  form.manufacturer        = 'ООО "Телематические Решения", г. Москва, Российская Федерация'
+  form.verification_method = 'СТ РК 2.86-2005'
+  form.verifier            = 'Карабаев А.'
+  form.make_year           = `${rand(2018, 2023)}г.`
+  form.class               = pick(classes)
+  form.plomb_number        = String(rand(10000, 99999))
+  form.water_data          = rand(0, 9999)
+  form.fio                 = `${pick(surnames)} ${pick(initials)}`
+  form.address             = `г. Костанай, ${pick(streets)}`
+  form.phone               = `+7 (${phone2}) ${phone3.slice(0,3)}-${phone3.slice(3,5)}-${phone3.slice(5,7)}`
+  form.check_date          = `${day}.${month}.${year}`
 }
 
 function submit() {
