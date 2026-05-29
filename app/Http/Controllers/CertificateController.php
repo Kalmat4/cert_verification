@@ -322,7 +322,7 @@ class CertificateController extends Controller
 
         foreach ($readings as $i => $row) {
             $idx = $i + 1;
-            $processor->setValue("row_n#{$idx}",      $row['n']          ?? '');
+            $processor->setValue("row_n#{$idx}",      $row['sort_order']+1          ?? '');
             $processor->setValue("row_dn#{$idx}",     $row['dn']         ?? '');
             $processor->setValue("row_qmin_s#{$idx}", $row['qmin_s']     ?? '');
             $processor->setValue("row_qmin_e#{$idx}", $row['qmin_e']     ?? '');
