@@ -9,9 +9,12 @@ class Cert extends Model
     protected $fillable = [
         'cert_number',
         'zavod_number',
+        'type_model',
         'make_year',
-        'fio_address',
         'water_data',
+        'fio',
+        'address',
+        'phone',
         'class',
         'check_date',
         'final_date',

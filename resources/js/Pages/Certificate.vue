@@ -40,6 +40,14 @@
           </div>
         </div>
 
+        <div class="mb-4">
+          <label class="block text-xs font-semibold text-gray-600 mb-1">
+            Тип / модель
+          </label>
+          <input v-model="form.type_model" type="text" placeholder="ВСХ-15"
+            class="w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors border-gray-300 focus:border-blue-500" />
+        </div>
+
         <div class="grid grid-cols-3 gap-4 mb-4">
           <div>
             <label class="block text-xs font-semibold text-gray-600 mb-1">Год изготовления</label>
@@ -76,12 +84,31 @@
         <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Пользователь</p>
 
         <div class="mb-4">
-          <label class="block text-xs font-semibold text-gray-600 mb-1">ФИО и адрес</label>
-          <input v-model="form.fio_address" type="text"
-            placeholder="Иванов А. Г.г. Костанай, мкр. Береке д. 67а кв. 22"
+          <label class="block text-xs font-semibold text-gray-600 mb-1">ФИО</label>
+          <input v-model="form.fio" type="text"
+            placeholder="Иванов А. Г."
             class="w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors"
-            :class="form.errors.fio_address ? 'border-red-400' : 'border-gray-300 focus:border-blue-500'" />
-          <p class="text-xs text-gray-400 mt-1">Формат: «Фамилия И. О.г. Город, улица д. X кв. X»</p>
+            :class="form.errors.fio ? 'border-red-400' : 'border-gray-300 focus:border-blue-500'" />
+          <p class="text-xs text-gray-400 mt-1">Формат: «Фамилия И. О.»</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Адрес</label>
+            <input v-model="form.address" type="text"
+              placeholder="г. Костанай, мкр. Береке д. 67а кв. 22"
+              class="w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors"
+              :class="form.errors.address ? 'border-red-400' : 'border-gray-300 focus:border-blue-500'" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">
+              Номер телефона
+            </label>
+            <input v-model="form.phone" type="text"
+              placeholder="+7 (700) 000-00-00"
+              class="w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors"
+              :class="form.errors.phone ? 'border-red-400' : 'border-gray-300 focus:border-blue-500'" />
+          </div>
         </div>
 
         <hr class="border-gray-100 my-5" />
@@ -127,28 +154,76 @@
       <template v-if="cert">
         <hr class="border-gray-100 my-6" />
         <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Скачать</p>
-        <div class="grid grid-cols-2 gap-3" :class="pdfAvailable ? 'grid-cols-2' : 'grid-cols-1'">
-          <a :href="`/certificate/${cert.id}/word`"
-            class="flex items-center justify-center gap-2 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-sm transition-colors">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            Скачать WORD
-          </a>
-          <a v-if="pdfAvailable" :href="`/certificate/${cert.id}/pdf`"
-            class="flex items-center justify-center gap-2 py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-sm transition-colors">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-            </svg>
-            Скачать PDF
-          </a>
-          <p v-if="!pdfAvailable" class="col-span-2 text-xs text-gray-400 mt-1">
-            Конвертация в PDF недоступна на Windows. Скачайте WORD и конвертируйте самостоятельно.
-          </p>
+
+        <div class="space-y-3">
+
+          <!-- Сертификат поверки -->
+          <div class="border border-gray-200 rounded-lg p-3">
+            <p class="text-xs font-semibold text-gray-500 mb-2">Сертификат поверки</p>
+            <div class="flex gap-2">
+              <a :href="`/certificate/${cert.id}/word`"
+                class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md text-xs transition-colors">
+                <IconDownload />
+                WORD
+              </a>
+              <a v-if="pdfAvailable" :href="`/certificate/${cert.id}/pdf`"
+                class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-md text-xs transition-colors">
+                <IconDownload />
+                PDF
+              </a>
+              <span v-else
+                class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-gray-100 text-gray-400 font-semibold rounded-md text-xs cursor-not-allowed"
+                title="Недоступно на Windows">
+                <IconDownload />
+                PDF
+              </span>
+            </div>
+          </div>
+
+          <!-- Протокол -->
+          <div class="border border-gray-200 rounded-lg p-3">
+            <p class="text-xs font-semibold text-gray-500 mb-2">Протокол</p>
+            <div class="flex gap-2">
+              <button disabled
+                class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-gray-100 text-gray-400 font-semibold rounded-md text-xs cursor-not-allowed">
+                <IconDownload />
+                WORD
+              </button>
+              <button disabled
+                class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-gray-100 text-gray-400 font-semibold rounded-md text-xs cursor-not-allowed">
+                <IconDownload />
+                PDF
+              </button>
+            </div>
+          </div>
+
+          <!-- Гарантийный талон -->
+          <div class="border border-gray-200 rounded-lg p-3">
+            <p class="text-xs font-semibold text-gray-500 mb-2">Гарантийный талон</p>
+            <div class="flex gap-2">
+              <a :href="`/certificate/${cert.id}/garant/word`"
+                class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md text-xs transition-colors">
+                <IconDownload />
+                WORD
+              </a>
+              <a v-if="pdfAvailable" :href="`/certificate/${cert.id}/garant/pdf`"
+                class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-md text-xs transition-colors">
+                <IconDownload />
+                PDF
+              </a>
+              <span v-else
+                class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-gray-100 text-gray-400 font-semibold rounded-md text-xs cursor-not-allowed"
+                title="Недоступно на Windows">
+                <IconDownload />
+                PDF
+              </span>
+            </div>
+          </div>
+
         </div>
+        <p v-if="!pdfAvailable" class="text-xs text-gray-400 mt-2">
+          Конвертация в PDF недоступна на Windows. Скачайте WORD и конвертируйте самостоятельно.
+        </p>
       </template>
     </div>
   </div>
@@ -156,7 +231,15 @@
 
 <script setup>
 import { useForm, usePage } from '@inertiajs/vue3'
-import { computed } from 'vue'
+import { computed, defineComponent, h } from 'vue'
+
+const IconDownload = defineComponent({
+  render: () => h('svg', { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2.2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+    h('path', { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' }),
+    h('polyline', { points: '7 10 12 15 17 10' }),
+    h('line', { x1: '12', y1: '15', x2: '12', y2: '3' }),
+  ]),
+})
 
 const props = defineProps({
   cert: { type: Object, default: null },
@@ -169,8 +252,11 @@ const pdfAvailable = computed(() => page.props.pdfAvailable)
 const form = useForm({
   cert_number:  props.cert?.cert_number  ?? 'VM-07-26-',
   zavod_number: props.cert?.zavod_number ?? '',
+  type_model:   props.cert?.type_model   ?? '',
   make_year:    props.cert?.make_year    ?? '2019г.',
-  fio_address:  props.cert?.fio_address  ?? '',
+  fio:          props.cert?.fio          ?? '',
+  address:      props.cert?.address      ?? '',
+  phone:        props.cert?.phone        ?? '',
   water_data:   props.cert?.water_data   ?? '',
   class:        props.cert?.class        ?? 'В',
   check_date:   props.cert?.check_date   ?? '',
