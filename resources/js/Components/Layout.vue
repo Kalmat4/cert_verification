@@ -1,8 +1,8 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gray-50 flex flex-col">
     <header class="bg-white border-b border-gray-200 shadow-sm">
       <div class="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
-        <span class="font-bold text-gray-800 text-base tracking-tight">Поверка счётчиков</span>
+        <Link href="/" class="font-bold text-gray-800 text-base tracking-tight hover:text-blue-600 transition-colors">Поверка счётчиков</Link>
         <nav class="flex items-center gap-1">
           <Link
             href="/"
@@ -31,11 +31,14 @@
         </nav>
       </div>
     </header>
-    <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+    <main class="flex-1 max-w-6xl mx-auto px-4 sm:px-6 py-8 w-full">
       <component :is="$slots.default ? 'div' : 'div'">
         <slot />
       </component>
     </main>
+    <footer class="border-t border-gray-100 py-4 mt-4">
+      <p class="text-center text-xs text-gray-400">@k_almat_t — 2026</p>
+    </footer>
   </div>
 </template>
 
