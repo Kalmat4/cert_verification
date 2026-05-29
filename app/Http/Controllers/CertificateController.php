@@ -285,6 +285,7 @@ class CertificateController extends Controller
         $processor->setValue('make_year',    $data['make_year']);
         $processor->setValue('fio_address',  trim(($data['fio'] ?? '') . ' ' . ($data['address'] ?? '')));
         $processor->setValue('water_data',   $data['water_data']);
+        $processor->setValue('verifier',   $data['verifier']);
         $processor->setValue('class',        $data['class']);
         $processor->setValue('check_date',   $data['check_date']);
         $processor->setValue('final_date',   $data['final_date']);
