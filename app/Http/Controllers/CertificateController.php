@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use App\Models\Cert;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
+use Inertia\Response;
 use PhpOffice\PhpWord\TemplateProcessor;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -20,9 +23,87 @@ class CertificateController extends Controller
         $this->tempDir      = storage_path('app/temp');
     }
 
-    public function index()
+    public function index(): Response
     {
-        return view('certificate', ['pdfAvailable' => PHP_OS_FAMILY !== 'Windows']);
+        return Inertia::render('Home', [
+            'certs' => Cert::latest()->take(5)->get(),
+        ]);
+    }
+
+    public function history(): Response
+    {
+        return Inertia::render('History', [
+            'certs' => Cert::latest()->paginate(15),
+        ]);
+    }
+
+    public function create(): Response
+    {
+        return Inertia::render('Certificate', ['cert' => null]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $data = $this->validated($request);
+        $cert = Cert::create($data);
+
+        return redirect()->route('certificate.edit', $cert->id)
+            ->with('success', 'Данные о поверке сохранены');
+    }
+
+    public function edit(Cert $cert): Response
+    {
+        return Inertia::render('Certificate', ['cert' => $cert]);
+    }
+
+    public function update(Request $request, Cert $cert): RedirectResponse
+    {
+        $data = $this->validated($request);
+        $cert->update($data);
+
+        return redirect()->route('certificate.edit', $cert->id)
+            ->with('success', 'Данные обновлены');
+    }
+
+    public function downloadWord(Cert $cert): BinaryFileResponse
+    {
+        $data     = $cert->toArray();
+        $docxPath = $this->buildDocx($data);
+        $filename = sprintf('cert_%s_%s.docx', $data['zavod_number'], str_replace('.', '', $data['check_date']));
+
+        return response()->download($docxPath, $filename)->deleteFileAfterSend(true);
+    }
+
+    public function downloadPdf(Cert $cert)
+    {
+        if (PHP_OS_FAMILY === 'Windows') {
+            return response()->json([
+                'error' => 'Конвертация в PDF недоступна на Windows.',
+            ], 501);
+        }
+
+        $data     = $cert->toArray();
+        $docxPath = $this->buildDocx($data);
+        $pdfDir   = dirname($docxPath);
+
+        $command = sprintf(
+            'HOME=/tmp libreoffice --headless --norestore --nofirststartwizard --convert-to pdf --outdir %s %s 2>&1',
+            escapeshellarg($pdfDir),
+            escapeshellarg($docxPath)
+        );
+
+        shell_exec($command);
+        @unlink($docxPath);
+
+        $pdfPath = substr($docxPath, 0, -5) . '.pdf';
+
+        if (!file_exists($pdfPath)) {
+            return response()->json(['error' => 'Не удалось сконвертировать в PDF'], 500);
+        }
+
+        $filename = sprintf('cert_%s_%s.pdf', $data['zavod_number'], str_replace('.', '', $data['check_date']));
+
+        return response()->download($pdfPath, $filename)->deleteFileAfterSend(true);
     }
 
     private function validated(Request $request): array
@@ -35,11 +116,12 @@ class CertificateController extends Controller
             'water_data'   => ['required', 'numeric'],
             'class'        => ['required'],
             'check_date'   => ['required', 'date_format:d.m.Y'],
-            'plomb_number'   => ['required'],
+            'plomb_number' => ['required'],
         ], [
             'check_date.date_format' => 'Дата поверки: формат ДД.ММ.ГГГГ',
             'water_data.numeric'     => 'Показания счётчика должны быть числом',
         ]);
+
         $data['final_date'] = Carbon::createFromFormat('d.m.Y', $data['check_date'])
             ->addYears(5)
             ->format('d.m.Y');
@@ -70,84 +152,5 @@ class CertificateController extends Controller
         $processor->saveAs($path);
 
         return $path;
-    }
-
-    public function downloadWord(Request $request): BinaryFileResponse
-    {
-        $data     = $this->validated($request);
-
-        $docxPath = $this->buildDocx($data);
-
-        $filename = sprintf(
-            'cert_%s_%s.docx',
-            $data['zavod_number'],
-            str_replace('.', '', $data['check_date'])
-        );
-
-        return response()->download($docxPath, $filename)->deleteFileAfterSend(true);
-    }
-
-    public function downloadPdf(Request $request)
-    {
-        if (PHP_OS_FAMILY === 'Windows') {
-            return response()->json([
-                'error' => 'Конвертация в PDF недоступна на Windows. Скачайте файл в формате WORD.',
-            ], 501);
-        }
-
-        $debug = [];
-
-        try {
-            $debug['os']           = PHP_OS_FAMILY;
-            $debug['template']     = $this->templatePath;
-            $debug['template_exists'] = file_exists($this->templatePath);
-            $debug['temp_dir']     = $this->tempDir;
-            $debug['temp_writable'] = is_writable(dirname($this->tempDir)) || is_writable($this->tempDir);
-
-            $data     = $this->validated($request);
-            $docxPath = $this->buildDocx($data);
-            $pdfDir   = dirname($docxPath);
-
-            $debug['docx_path']   = $docxPath;
-            $debug['docx_exists'] = file_exists($docxPath);
-
-            $libreoffice = trim((string) shell_exec('which libreoffice 2>&1'));
-            $debug['libreoffice_path'] = $libreoffice ?: 'NOT FOUND';
-
-            $command = sprintf(
-                'HOME=/tmp libreoffice --headless --norestore --nofirststartwizard --convert-to pdf --outdir %s %s 2>&1',
-                escapeshellarg($pdfDir),
-                escapeshellarg($docxPath)
-            );
-            $debug['command'] = $command;
-
-            $cmdOutput = shell_exec($command);
-            $debug['cmd_output'] = $cmdOutput;
-
-            @unlink($docxPath);
-
-            $pdfPath = substr($docxPath, 0, -5) . '.pdf';
-            $debug['pdf_path']   = $pdfPath;
-            $debug['pdf_exists'] = file_exists($pdfPath);
-
-            if (!file_exists($pdfPath)) {
-                return response()->json(['debug' => $debug], 500);
-            }
-
-            $filename = sprintf(
-                'cert_%s_%s.pdf',
-                $data['zavod_number'],
-                str_replace('.', '', $data['check_date'])
-            );
-
-            return response()->download($pdfPath, $filename)->deleteFileAfterSend(true);
-
-        } catch (\Throwable $e) {
-            $debug['exception'] = $e->getMessage();
-            $debug['file']      = $e->getFile() . ':' . $e->getLine();
-            $debug['trace']     = $e->getTraceAsString();
-
-            return response()->json(['debug' => $debug], 500);
-        }
     }
 }
