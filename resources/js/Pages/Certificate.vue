@@ -4,7 +4,17 @@
       <h1 class="text-xl font-bold text-gray-900">
         {{ cert ? 'Редактировать сертификат' : 'Новый сертификат' }}
       </h1>
-      <span v-if="cert" class="text-xs text-gray-400"># {{ cert.id }}</span>
+      <div class="flex items-center gap-3">
+        <button v-if="isLocal" type="button" @click="fillRandom"
+          class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-dashed border-amber-400 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 3 21 3 21 8"/><polyline points="4 20 9 20 4 15"/>
+            <path d="M21 3l-7 7M4 20l7-7"/><path d="M14 7l3-3M10 17l-3 3"/>
+          </svg>
+          Вставить рандомные данные
+        </button>
+        <span v-if="cert" class="text-xs text-gray-400"># {{ cert.id }}</span>
+      </div>
     </div>
 
     <!-- Success -->
@@ -197,9 +207,9 @@
             </div>
           </div>
 
-          <!-- Гарантийный талон -->
+          <!-- Гарантийное соглашение -->
           <div class="border border-gray-200 rounded-lg p-3">
-            <p class="text-xs font-semibold text-gray-500 mb-2">Гарантийный талон</p>
+            <p class="text-xs font-semibold text-gray-500 mb-2">Гарантийное соглашение</p>
             <div class="flex gap-2">
               <a :href="`/certificate/${cert.id}/garant/word`"
                 class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md text-xs transition-colors">
@@ -248,6 +258,38 @@ const props = defineProps({
 const page = usePage()
 const flash = computed(() => page.props.flash ?? {})
 const pdfAvailable = computed(() => page.props.pdfAvailable)
+const isLocal = computed(() => page.props.isLocal)
+
+function fillRandom() {
+  const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
+  const pick = arr => arr[rand(0, arr.length - 1)]
+
+  const surnames = ['Иванов', 'Петров', 'Сидоров', 'Ахметов', 'Нурмагамбетов', 'Байжанов', 'Касымов', 'Жумабеков']
+  const initials = ['А. Б.', 'С. Т.', 'Д. Е.', 'К. М.', 'Н. О.', 'Р. В.', 'И. Г.', 'Ю. Л.']
+  const streets = ['мкр. Береке д. 12 кв. 5', 'мкр. Аль-Фараби д. 34 кв. 18', 'ул. Алтынсарина д. 7 кв. 3', 'мкр. Юбилейный д. 56 кв. 101', 'ул. Байтурсынова д. 9 кв. 47']
+  const models = ['ВСХ-15', 'ВСХ-20', 'ВСКМ-15', 'СХВ-15Г', 'МТК-Т-15', 'ВСГ-15']
+  const classes = ['В', 'Г', 'А']
+
+  const day = String(rand(1, 28)).padStart(2, '0')
+  const month = String(rand(1, 12)).padStart(2, '0')
+  const year = rand(2023, 2026)
+  const zavodNum = String(rand(1000000, 9999999))
+  const certSuffix = String(rand(1000000, 9999999))
+  const phone2 = String(rand(700, 777))
+  const phone3 = String(rand(1000000, 9999999))
+
+  form.cert_number  = `VM-07-${String(year).slice(2)}-${certSuffix}`
+  form.zavod_number = zavodNum
+  form.type_model   = pick(models)
+  form.make_year    = `${rand(2018, 2023)}г.`
+  form.class        = pick(classes)
+  form.plomb_number = String(rand(10000, 99999))
+  form.water_data   = rand(0, 9999)
+  form.fio          = `${pick(surnames)} ${pick(initials)}`
+  form.address      = `г. Костанай, ${pick(streets)}`
+  form.phone        = `+7 (${phone2}) ${phone3.slice(0,3)}-${phone3.slice(3,5)}-${phone3.slice(5,7)}`
+  form.check_date   = `${day}.${month}.${year}`
+}
 
 const form = useForm({
   cert_number:  props.cert?.cert_number  ?? 'VM-07-26-',

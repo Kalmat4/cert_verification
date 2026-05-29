@@ -15,6 +15,7 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
             ],
             'pdfAvailable' => PHP_OS_FAMILY !== 'Windows',
+            'isLocal'      => app()->isLocal(),
         ];
     }
 }

@@ -71,7 +71,7 @@ class CertificateController extends Controller
     {
         $data     = $cert->toArray();
         $docxPath = $this->buildDocx($data);
-        $filename = sprintf('cert_%s_%s.docx', $data['zavod_number'], str_replace('.', '', $data['check_date']));
+        $filename = sprintf('Сертификат о поверке %s %s.docx', $data['zavod_number'], str_replace('.', '', $data['check_date']));
 
         return response()->download($docxPath, $filename)->deleteFileAfterSend(true);
     }
@@ -112,7 +112,7 @@ class CertificateController extends Controller
     {
         $data     = $cert->toArray();
         $docxPath = $this->buildGarantDocx($data);
-        $filename = sprintf('garant_%s_%s.docx', $data['zavod_number'], str_replace('.', '', $data['check_date']));
+        $filename = sprintf('Гарантийное соглашение %s %s.docx', $data['zavod_number'], str_replace('.', '', $data['check_date']));
 
         return response()->download($docxPath, $filename)->deleteFileAfterSend(true);
     }
