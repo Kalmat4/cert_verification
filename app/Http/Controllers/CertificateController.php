@@ -103,7 +103,7 @@ class CertificateController extends Controller
             return response()->json(['error' => 'Не удалось сконвертировать в PDF'], 500);
         }
 
-        $filename = sprintf('cert_%s_%s.pdf', $data['zavod_number'], str_replace('.', '', $data['check_date']));
+        $filename = sprintf('Сертификат о поверке %s %s.pdf', $data['zavod_number'], str_replace('.', '', $data['check_date']));
 
         return response()->download($pdfPath, $filename)->deleteFileAfterSend(true);
     }
@@ -144,7 +144,7 @@ class CertificateController extends Controller
             return response()->json(['error' => 'Не удалось сконвертировать в PDF'], 500);
         }
 
-        $filename = sprintf('garant_%s_%s.pdf', $data['zavod_number'], str_replace('.', '', $data['check_date']));
+        $filename = sprintf('Гарантийное соглашение %s %s.pdf', $data['zavod_number'], str_replace('.', '', $data['check_date']));
 
         return response()->download($pdfPath, $filename)->deleteFileAfterSend(true);
     }
