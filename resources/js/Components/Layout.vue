@@ -2,17 +2,8 @@
   <div class="min-h-screen bg-gray-50 flex flex-col">
     <header class="bg-white border-b border-gray-200 shadow-sm">
       <div class="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
-        <Link href="/" class="font-bold text-gray-800 text-base tracking-tight hover:text-blue-600 transition-colors">Поверка счётчиков</Link>
+        <Link href="/history" class="font-bold text-gray-800 text-base tracking-tight hover:text-blue-600 transition-colors">Поверка счётчиков</Link>
         <nav class="flex items-center gap-1">
-          <Link
-            href="/"
-            class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
-            :class="isActive('/') && !isActive('/history') && !isActive('/certificate')
-              ? 'bg-blue-50 text-blue-700'
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'"
-          >
-            Главная
-          </Link>
           <Link
             href="/history"
             class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"

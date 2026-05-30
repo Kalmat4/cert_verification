@@ -3,7 +3,7 @@
 use App\Http\Controllers\CertificateController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [CertificateController::class, 'index'])->name('home');
+Route::redirect('/', '/history')->name('home');
 Route::get('/history', [CertificateController::class, 'history'])->name('history');
 
 Route::get('/certificate/create', [CertificateController::class, 'create'])->name('certificate.create');

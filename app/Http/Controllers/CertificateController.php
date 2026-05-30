@@ -223,15 +223,22 @@ class CertificateController extends Controller
         return response()->download($pdfPath, $filename)->deleteFileAfterSend(true);
     }
 
-    public function downloadZip(Request $request): BinaryFileResponse
+    public function downloadZip(Request $request): BinaryFileResponse|\Illuminate\Http\JsonResponse
     {
         $request->validate([
-            'ids'   => ['required', 'array', 'min:1'],
-            'ids.*' => ['integer', 'exists:certs,id'],
-            'type'  => ['required', 'in:cert,protocol,garant'],
+            'ids'    => ['required', 'array', 'min:1'],
+            'ids.*'  => ['integer', 'exists:certs,id'],
+            'type'   => ['required', 'in:cert,protocol,garant'],
+            'format' => ['required', 'in:word,pdf'],
         ]);
 
-        $type  = $request->input('type');
+        $type   = $request->input('type');
+        $format = $request->input('format', 'word');
+
+        if ($format === 'pdf' && PHP_OS_FAMILY === 'Windows') {
+            return response()->json(['error' => 'Конвертация в PDF недоступна на Windows.'], 501);
+        }
+
         $certs = Cert::with('readings')->whereIn('id', $request->input('ids'))->get();
 
         if (!is_dir($this->tempDir)) {
@@ -248,14 +255,30 @@ class CertificateController extends Controller
             $data     = $cert->toArray();
             $safeName = preg_replace('/[\\\\\\/:*?"<>|]/', '_', "{$data['zavod_number']}_{$data['check_date']}");
 
-            [$filePath, $filename] = match ($type) {
-                'cert'     => [$this->buildDocx($data),         "{$cert->id}_{$safeName}_Сертификат.docx"],
-                'protocol' => [$this->buildProtocolDocx($data), "{$cert->id}_{$safeName}_Протокол.docx"],
-                'garant'   => [$this->buildGarantDocx($data),   "{$cert->id}_{$safeName}_Гарантия.docx"],
+            [$docxPath, $baseName] = match ($type) {
+                'cert'     => [$this->buildDocx($data),         "{$cert->id}_{$safeName}_Сертификат"],
+                'protocol' => [$this->buildProtocolDocx($data), "{$cert->id}_{$safeName}_Протокол"],
+                'garant'   => [$this->buildGarantDocx($data),   "{$cert->id}_{$safeName}_Гарантия"],
             };
 
-            $zip->addFile($filePath, $filename);
-            $tempFiles[] = $filePath;
+            if ($format === 'pdf') {
+                $command = sprintf(
+                    'HOME=/tmp libreoffice --headless --norestore --nofirststartwizard --convert-to pdf --outdir %s %s 2>&1',
+                    escapeshellarg(dirname($docxPath)),
+                    escapeshellarg($docxPath)
+                );
+                shell_exec($command);
+                @unlink($docxPath);
+
+                $pdfPath = substr($docxPath, 0, -5) . '.pdf';
+                if (file_exists($pdfPath)) {
+                    $zip->addFile($pdfPath, $baseName . '.pdf');
+                    $tempFiles[] = $pdfPath;
+                }
+            } else {
+                $zip->addFile($docxPath, $baseName . '.docx');
+                $tempFiles[] = $docxPath;
+            }
         }
 
         $zip->close();
@@ -269,8 +292,9 @@ class CertificateController extends Controller
             'protocol' => 'Протоколы',
             'garant'   => 'Гарантии',
         };
+        $ext = $format === 'pdf' ? 'PDF' : 'Word';
 
-        return response()->download($zipPath, "{$label}.zip")->deleteFileAfterSend(true);
+        return response()->download($zipPath, "{$label} {$ext}.zip")->deleteFileAfterSend(true);
     }
 
     private function validated(Request $request): array

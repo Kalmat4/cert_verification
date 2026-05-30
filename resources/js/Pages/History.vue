@@ -1,6 +1,5 @@
 <template>
   <div>
-    <!-- Закрытие меню по клику вне -->
     <div v-if="openMenuId !== null" class="fixed inset-0 z-10" @click="openMenuId = null" />
 
     <div class="flex items-center justify-between mb-6">
@@ -19,7 +18,6 @@
       <table class="w-full text-sm rounded-xl overflow-hidden">
         <thead>
           <tr class="border-b border-gray-100 bg-gray-50">
-            <!-- Чекбокс "выбрать все" -->
             <th class="px-3 py-3 w-8 rounded-tl-xl">
               <input
                 type="checkbox"
@@ -64,7 +62,7 @@
             <td class="px-4 py-3">
               <div class="flex flex-col items-end gap-1.5">
 
-                <!-- Строка 1: навигация -->
+                <!-- Навигация -->
                 <div class="flex items-center gap-1.5">
                   <Link :href="`/certificate/${cert.id}/edit`"
                     class="px-2.5 py-1 text-xs font-medium rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors">
@@ -76,24 +74,41 @@
                   </button>
                 </div>
 
-                <!-- Строка 2: скачать -->
+                <!-- Word -->
                 <div class="flex items-center gap-1">
-                  <span class="text-xs text-gray-400 mr-0.5">↓</span>
-                  <a :href="`/certificate/${cert.id}/word`"
-                    title="Сертификат поверки (Word)"
-                    class="px-2 py-1 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+                  <span class="text-xs font-medium text-gray-400 w-7">Word</span>
+                  <a :href="`/certificate/${cert.id}/word`" title="Сертификат (Word)"
+                    class="px-2 py-0.5 text-xs font-medium rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors">
                     Серт.
                   </a>
-                  <a :href="`/certificate/${cert.id}/protocol/word`"
-                    title="Протокол (Word)"
-                    class="px-2 py-1 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+                  <a :href="`/certificate/${cert.id}/protocol/word`" title="Протокол (Word)"
+                    class="px-2 py-0.5 text-xs font-medium rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors">
                     Прот.
                   </a>
-                  <a :href="`/certificate/${cert.id}/garant/word`"
-                    title="Гарантийное соглашение (Word)"
-                    class="px-2 py-1 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+                  <a :href="`/certificate/${cert.id}/garant/word`" title="Гарантия (Word)"
+                    class="px-2 py-0.5 text-xs font-medium rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors">
                     Гар.
                   </a>
+                </div>
+
+                <!-- PDF -->
+                <div class="flex items-center gap-1">
+                  <span class="text-xs font-medium text-gray-400 w-7">PDF</span>
+                  <template v-if="pdfAvailable">
+                    <a :href="`/certificate/${cert.id}/pdf`" title="Сертификат (PDF)"
+                      class="px-2 py-0.5 text-xs font-medium rounded bg-red-600 text-white hover:bg-red-700 transition-colors">
+                      Серт.
+                    </a>
+                    <a :href="`/certificate/${cert.id}/protocol/pdf`" title="Протокол (PDF)"
+                      class="px-2 py-0.5 text-xs font-medium rounded bg-red-600 text-white hover:bg-red-700 transition-colors">
+                      Прот.
+                    </a>
+                    <a :href="`/certificate/${cert.id}/garant/pdf`" title="Гарантия (PDF)"
+                      class="px-2 py-0.5 text-xs font-medium rounded bg-red-600 text-white hover:bg-red-700 transition-colors">
+                      Гар.
+                    </a>
+                  </template>
+                  <span v-else class="text-xs text-gray-400 italic">недоступно на Windows</span>
                 </div>
 
               </div>
@@ -136,50 +151,50 @@
     >
       <div
         v-if="selectedIds.length > 0"
-        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-gray-900 text-white rounded-2xl shadow-2xl px-5 py-3 whitespace-nowrap"
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-gray-900 text-white rounded-2xl shadow-2xl px-4 py-3 whitespace-nowrap"
       >
         <!-- Счётчик -->
-        <span class="text-sm font-semibold">
-          Выбрано: {{ selectedIds.length }}
-        </span>
+        <span class="text-sm font-semibold mr-1">Выбрано: {{ selectedIds.length }}</span>
 
         <div class="w-px h-5 bg-gray-600" />
 
-        <!-- Скачать ZIP -->
-        <span class="text-xs text-gray-400 font-medium">Скачать архив:</span>
-
-        <button
-          @click="downloadZip('cert')"
-          class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors"
-        >
-          <IconZip />
-          Сертификаты
+        <!-- Word -->
+        <span class="text-xs text-gray-400 font-medium">Word:</span>
+        <button @click="downloadZip('cert', 'word')"
+          class="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors">
+          <IconZip /> Серт.
+        </button>
+        <button @click="downloadZip('protocol', 'word')"
+          class="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors">
+          <IconZip /> Прот.
+        </button>
+        <button @click="downloadZip('garant', 'word')"
+          class="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors">
+          <IconZip /> Гар.
         </button>
 
-        <button
-          @click="downloadZip('protocol')"
-          class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors"
-        >
-          <IconZip />
-          Протоколы
-        </button>
-
-        <button
-          @click="downloadZip('garant')"
-          class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors"
-        >
-          <IconZip />
-          Гарантии
-        </button>
+        <!-- PDF (только если доступно) -->
+        <template v-if="pdfAvailable">
+          <div class="w-px h-5 bg-gray-600" />
+          <span class="text-xs text-gray-400 font-medium">PDF:</span>
+          <button @click="downloadZip('cert', 'pdf')"
+            class="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-red-600 hover:bg-red-500 rounded-lg transition-colors">
+            <IconZip /> Серт.
+          </button>
+          <button @click="downloadZip('protocol', 'pdf')"
+            class="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-red-600 hover:bg-red-500 rounded-lg transition-colors">
+            <IconZip /> Прот.
+          </button>
+          <button @click="downloadZip('garant', 'pdf')"
+            class="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold bg-red-600 hover:bg-red-500 rounded-lg transition-colors">
+            <IconZip /> Гар.
+          </button>
+        </template>
 
         <div class="w-px h-5 bg-gray-600" />
 
         <!-- Сбросить -->
-        <button
-          @click="selectedIds = []"
-          class="p-1 text-gray-400 hover:text-white transition-colors"
-          title="Сбросить выбор"
-        >
+        <button @click="selectedIds = []" class="p-1 text-gray-400 hover:text-white transition-colors" title="Сбросить выбор">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
@@ -194,7 +209,7 @@ import { ref, computed, defineComponent, h } from 'vue'
 import { Link, router, usePage } from '@inertiajs/vue3'
 
 const IconZip = defineComponent({
-  render: () => h('svg', { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2.2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+  render: () => h('svg', { width: 12, height: 12, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2.2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
     h('path', { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' }),
     h('polyline', { points: '7 10 12 15 17 10' }),
     h('line', { x1: '12', y1: '15', x2: '12', y2: '3' }),
@@ -205,13 +220,12 @@ const props = defineProps({
   certs: { type: Object, required: true },
 })
 
-const openMenuId  = ref(null)
-const selectedIds = ref([])
-
+const openMenuId   = ref(null)
+const selectedIds  = ref([])
 const pdfAvailable = computed(() => usePage().props.pdfAvailable)
 
-const allPageIds  = computed(() => props.certs.data.map(c => c.id))
-const allSelected = computed(() => allPageIds.value.length > 0 && allPageIds.value.every(id => selectedIds.value.includes(id)))
+const allPageIds   = computed(() => props.certs.data.map(c => c.id))
+const allSelected  = computed(() => allPageIds.value.length > 0 && allPageIds.value.every(id => selectedIds.value.includes(id)))
 const someSelected = computed(() => selectedIds.value.length > 0)
 
 function toggleAll() {
@@ -235,7 +249,7 @@ function copyAndCreate(cert) {
   router.get('/certificate/create', { copy_id: cert.id })
 }
 
-function downloadZip(type) {
+function downloadZip(type, format = 'word') {
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ?? ''
 
   const form = document.createElement('form')
@@ -253,6 +267,7 @@ function downloadZip(type) {
 
   addHidden('_token', csrfToken)
   addHidden('type', type)
+  addHidden('format', format)
   selectedIds.value.forEach(id => addHidden('ids[]', String(id)))
 
   document.body.appendChild(form)
