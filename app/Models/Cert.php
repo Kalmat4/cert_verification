@@ -34,6 +34,7 @@ class Cert extends Model
     protected $fillable = [
         'cert_number',
         'zavod_number',
+        'garant_number',
         'type_model',
         'manufacturer',
         'verification_method',
