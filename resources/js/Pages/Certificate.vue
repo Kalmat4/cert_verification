@@ -1,5 +1,66 @@
 <template>
   <div class="w-5/5 mx-auto">
+
+    <!-- ══ МОДАЛКА СКАЧИВАНИЯ ══ -->
+    <Transition enter-active-class="transition duration-150 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100"
+                leave-active-class="transition duration-100 ease-in"  leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="dl.open" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/40" @click="closeDl" />
+        <div class="relative z-10 w-full max-w-sm bg-white rounded-2xl shadow-2xl flex flex-col">
+          <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <div>
+              <h2 class="text-base font-bold text-gray-900">Скачать документ</h2>
+              <p class="text-xs text-gray-500 mt-0.5">{{ dl.cert?.cert_number }}</p>
+            </div>
+            <button @click="closeDl" class="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          <div class="px-5 py-4 space-y-4">
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Документ</p>
+              <div class="flex gap-2">
+                <button v-for="d in dlDocTypes" :key="d.key" type="button" @click="dl.docType = d.key"
+                  class="flex-1 py-2 text-xs font-semibold rounded-lg border transition-colors"
+                  :class="dl.docType === d.key ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-300 text-gray-700 hover:border-gray-400'">
+                  {{ d.label }}
+                </button>
+              </div>
+            </div>
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Формат</p>
+              <div class="flex gap-2">
+                <button type="button" @click="dl.format = 'word'"
+                  class="flex-1 py-2 text-xs font-semibold rounded-lg border transition-colors"
+                  :class="dl.format === 'word' ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 text-gray-700 hover:border-blue-300'">
+                  Word
+                </button>
+                <button v-if="pdfAvailable" type="button" @click="dl.format = 'pdf'"
+                  class="flex-1 py-2 text-xs font-semibold rounded-lg border transition-colors"
+                  :class="dl.format === 'pdf' ? 'bg-red-600 text-white border-red-600' : 'border-gray-300 text-gray-700 hover:border-red-300'">
+                  PDF
+                </button>
+                <span v-else class="flex-1 py-2 text-xs font-semibold rounded-lg border border-gray-200 text-gray-400 text-center cursor-not-allowed" title="PDF недоступен на Windows">PDF</span>
+              </div>
+            </div>
+          </div>
+          <div class="px-5 pb-4">
+            <button @click="triggerDl"
+              class="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Скачать
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-xl font-bold text-gray-900">
         {{ cert ? 'Редактировать поверку' : copyFrom ? 'Новая поверка (копия)' : 'Новая поверка' }}
@@ -389,29 +450,45 @@
       <!-- ═══ СКАЧАТЬ (только при редактировании) ═══ -->
       <template v-if="cert">
         <hr class="border-gray-100 my-6" />
-        <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Скачать</p>
+        <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Документы клиента</p>
+
         <div class="space-y-3">
-          <div v-for="doc in downloadDocs" :key="doc.key" class="border border-gray-200 rounded-lg p-3">
-            <p class="text-xs font-semibold text-gray-500 mb-2">{{ doc.label }}</p>
-            <div class="flex gap-2">
-              <a :href="`/certificate/${cert.id}/${doc.wordPath}`"
-                class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md text-xs transition-colors">
-                <IconDownload /> WORD
-              </a>
-              <a v-if="pdfAvailable" :href="`/certificate/${cert.id}/${doc.pdfPath}`"
-                class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-md text-xs transition-colors">
-                <IconDownload /> PDF
-              </a>
-              <span v-else
-                class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-gray-100 text-gray-400 font-semibold rounded-md text-xs cursor-not-allowed"
-                title="Недоступно на Windows">
-                <IconDownload /> PDF
-              </span>
+          <div v-for="meter in cert.meter?.client?.meters" :key="meter.id"
+            class="border border-gray-200 rounded-lg overflow-hidden">
+
+            <!-- Заголовок счётчика -->
+            <div class="px-4 py-2.5 bg-gray-50 border-b border-gray-100 flex items-center gap-2">
+              <span class="text-xs font-bold text-gray-700">{{ meter.type_model || 'Счётчик' }}</span>
+              <span class="text-xs text-gray-400">#{{ meter.zavod_number }}</span>
+            </div>
+
+            <!-- Сертификаты счётчика -->
+            <div class="divide-y divide-gray-100">
+              <div v-for="c in meter.certs" :key="c.id"
+                class="flex items-center justify-between px-4 py-2.5 transition-colors"
+                :class="c.id === cert.id ? 'bg-blue-50/70' : 'hover:bg-gray-50'">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-medium text-gray-900">{{ c.cert_number }}</span>
+                    <span v-if="c.id === cert.id"
+                      class="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">текущий</span>
+                  </div>
+                  <p class="text-xs text-gray-400 mt-0.5">{{ c.check_date }}</p>
+                </div>
+                <button @click="openDl(c)"
+                  class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-300 text-emerald-700 hover:bg-emerald-50 transition-colors flex-shrink-0">
+                  Скачать
+                </button>
+              </div>
+              <p v-if="!meter.certs?.length" class="px-4 py-3 text-xs text-gray-400 italic">
+                Нет сертификатов
+              </p>
             </div>
           </div>
         </div>
-        <p v-if="!pdfAvailable" class="text-xs text-gray-400 mt-2">
-          Конвертация в PDF недоступна на Windows.
+
+        <p v-if="!pdfAvailable" class="text-xs text-gray-400 mt-3">
+          PDF недоступен на Windows.
         </p>
       </template>
     </div>
@@ -420,15 +497,7 @@
 
 <script setup>
 import { useForm, usePage, router } from '@inertiajs/vue3'
-import { computed, defineComponent, h, ref, watch } from 'vue'
-
-const IconDownload = defineComponent({
-  render: () => h('svg', { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2.2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
-    h('path', { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' }),
-    h('polyline', { points: '7 10 12 15 17 10' }),
-    h('line', { x1: '12', y1: '15', x2: '12', y2: '3' }),
-  ]),
-})
+import { computed, reactive, ref, watch } from 'vue'
 
 const props = defineProps({
   cert: { type: Object, default: null },
@@ -685,11 +754,24 @@ const finalDate = computed(() => {
   return match ? `${match[1]}.${match[2]}.${parseInt(match[3]) + 5}` : ''
 })
 
-const downloadDocs = [
-  { key: 'cert', label: 'Сертификат поверки', wordPath: 'word', pdfPath: 'pdf' },
-  { key: 'protocol', label: 'Протокол', wordPath: 'protocol/word', pdfPath: 'protocol/pdf' },
-  { key: 'garant', label: 'Гарантийное соглашение', wordPath: 'garant/word', pdfPath: 'garant/pdf' },
+// ── Модалка скачивания ────────────────────────────
+const dlDocTypes = [
+  { key: 'cert',     label: 'Сертификат' },
+  { key: 'protocol', label: 'Протокол'   },
+  { key: 'garant',   label: 'Гарантия'   },
 ]
+const dl = reactive({ open: false, cert: null, docType: 'cert', format: 'word' })
+
+function openDl(cert) { dl.open = true; dl.cert = cert; dl.docType = 'cert'; dl.format = 'word' }
+function closeDl()    { dl.open = false; dl.cert = null }
+function triggerDl()  {
+  if (!dl.cert) return
+  const path = dl.docType === 'cert'
+    ? `/certificate/${dl.cert.id}/${dl.format}`
+    : `/certificate/${dl.cert.id}/${dl.docType}/${dl.format}`
+  window.open(path, '_blank')
+  closeDl()
+}
 
 // ── Helpers ───────────────────────────────────────
 const FIELD_DEFAULTS = {

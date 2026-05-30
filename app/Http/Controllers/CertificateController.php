@@ -75,7 +75,12 @@ class CertificateController extends Controller
 
     public function edit(Cert $cert): Response
     {
-        $cert->load('meter.client.meters', 'readings');
+        $cert->load([
+            'meter.client.meters' => fn ($q) => $q->with([
+                'certs' => fn ($q2) => $q2->orderByDesc('id')->select('id', 'cert_number', 'check_date', 'meter_id'),
+            ]),
+            'readings',
+        ]);
 
         return Inertia::render('Certificate', [
             'cert'     => $cert,
