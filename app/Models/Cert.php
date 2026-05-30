@@ -7,6 +7,25 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Cert extends Model
 {
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::created(function (self $cert) {
+            $cert->updateQuietly([
+                'garant_number' => $cert->id . ' / ' . str_replace('.', '_', $cert->check_date),
+            ]);
+        });
+
+        static::updated(function (self $cert) {
+            if ($cert->wasChanged('check_date')) {
+                $cert->updateQuietly([
+                    'garant_number' => $cert->id . ' / ' . str_replace('.', '_', $cert->check_date),
+                ]);
+            }
+        });
+    }
+
     public function readings(): HasMany
     {
         return $this->hasMany(CertReading::class)->orderBy('sort_order');

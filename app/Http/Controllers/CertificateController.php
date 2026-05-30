@@ -253,13 +253,24 @@ class CertificateController extends Controller
             mkdir($this->tempDir, 0755, true);
         }
 
+        $checkDate = Carbon::createFromFormat('d.m.Y', $data['check_date']);
+        $months = [
+            1 => 'января', 2 => 'февраля', 3 => 'марта',  4 => 'апреля',
+            5 => 'мая',    6 => 'июня',    7 => 'июля',    8 => 'августа',
+            9 => 'сентября', 10 => 'октября', 11 => 'ноября', 12 => 'декабря',
+        ];
+
         $processor = new TemplateProcessor($this->garantTemplatePath);
-        $processor->setValue('fio',          $data['fio'] ?? '');
-        $processor->setValue('address',      $data['address'] ?? '');
-        $processor->setValue('phone',        $data['phone'] ?? '');
-        $processor->setValue('type',         $data['type_model'] ?? '');
-        $processor->setValue('zavod_number', $data['zavod_number']);
-        $processor->setValue('check_date',   $data['check_date']);
+        $processor->setValue('fio',              $data['fio'] ?? '');
+        $processor->setValue('address',          $data['address'] ?? '');
+        $processor->setValue('phone',            $data['phone'] ?? '');
+        $processor->setValue('type',             $data['type_model'] ?? '');
+        $processor->setValue('zavod_number',     $data['zavod_number']);
+        $processor->setValue('check_date',       $data['check_date']);
+        $processor->setValue('garant_number',    $data['garant_number'] ?? '');
+        $processor->setValue('check_date_day',   $checkDate->format('d'));
+        $processor->setValue('check_date_month', $months[(int) $checkDate->format('n')]);
+        $processor->setValue('check_date_year',  substr($checkDate->format('Y'), -1));
 
         $path = $this->tempDir . DIRECTORY_SEPARATOR . 'garant_' . Str::uuid() . '.docx';
         $processor->saveAs($path);
