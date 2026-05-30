@@ -40,9 +40,16 @@ class CertificateController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
-        return Inertia::render('Certificate', ['cert' => null]);
+        $copyFrom = $request->has('copy_id')
+            ? Cert::find($request->integer('copy_id'))
+            : null;
+
+        return Inertia::render('Certificate', [
+            'cert'     => null,
+            'copyFrom' => $copyFrom,
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -214,6 +221,56 @@ class CertificateController extends Controller
         $filename = sprintf('Гарантийное соглашение %s %s.pdf', $data['zavod_number'], str_replace('.', '', $data['check_date']));
 
         return response()->download($pdfPath, $filename)->deleteFileAfterSend(true);
+    }
+
+    public function downloadZip(Request $request): BinaryFileResponse
+    {
+        $request->validate([
+            'ids'   => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:certs,id'],
+            'type'  => ['required', 'in:cert,protocol,garant'],
+        ]);
+
+        $type  = $request->input('type');
+        $certs = Cert::with('readings')->whereIn('id', $request->input('ids'))->get();
+
+        if (!is_dir($this->tempDir)) {
+            mkdir($this->tempDir, 0755, true);
+        }
+
+        $zipPath = $this->tempDir . DIRECTORY_SEPARATOR . 'archive_' . Str::uuid() . '.zip';
+        $zip     = new \ZipArchive();
+        $zip->open($zipPath, \ZipArchive::CREATE);
+
+        $tempFiles = [];
+
+        foreach ($certs as $cert) {
+            $data     = $cert->toArray();
+            $safeName = preg_replace('/[\\\\\\/:*?"<>|]/', '_', "{$data['zavod_number']}_{$data['check_date']}");
+
+            [$filePath, $filename] = match ($type) {
+                'cert'     => [$this->buildDocx($data),         "{$cert->id}_{$safeName}_Сертификат.docx"],
+                'protocol' => [$this->buildProtocolDocx($data), "{$cert->id}_{$safeName}_Протокол.docx"],
+                'garant'   => [$this->buildGarantDocx($data),   "{$cert->id}_{$safeName}_Гарантия.docx"],
+            };
+
+            $zip->addFile($filePath, $filename);
+            $tempFiles[] = $filePath;
+        }
+
+        $zip->close();
+
+        foreach ($tempFiles as $f) {
+            @unlink($f);
+        }
+
+        $label = match ($type) {
+            'cert'     => 'Сертификаты',
+            'protocol' => 'Протоколы',
+            'garant'   => 'Гарантии',
+        };
+
+        return response()->download($zipPath, "{$label}.zip")->deleteFileAfterSend(true);
     }
 
     private function validated(Request $request): array

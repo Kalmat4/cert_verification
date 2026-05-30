@@ -16,3 +16,5 @@ Route::get('/certificate/{cert}/protocol/word', [CertificateController::class, '
 Route::get('/certificate/{cert}/protocol/pdf', [CertificateController::class, 'downloadProtocolPdf'])->name('certificate.protocol.pdf');
 Route::get('/certificate/{cert}/garant/word', [CertificateController::class, 'downloadGarantWord'])->name('certificate.garant.word');
 Route::get('/certificate/{cert}/garant/pdf', [CertificateController::class, 'downloadGarantPdf'])->name('certificate.garant.pdf');
+
+Route::post('/certificates/download-zip', [CertificateController::class, 'downloadZip'])->name('certificates.zip');

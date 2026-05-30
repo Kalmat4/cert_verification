@@ -2,7 +2,7 @@
   <div class="w-5/5 mx-auto">
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-xl font-bold text-gray-900">
-        {{ cert ? 'Редактировать сертификат' : 'Новый сертификат' }}
+        {{ cert ? 'Редактировать сертификат' : copyFrom ? 'Новый сертификат (копия)' : 'Новый сертификат' }}
       </h1>
       <div class="flex items-center gap-3">
         <button v-if="isLocal" type="button" @click="fillRandom"
@@ -176,8 +176,9 @@
               <div>
                 <p class="text-sm font-semibold text-blue-700">Данные о поверке</p>
                 <p class="text-xs text-blue-500/80 mt-0.5">
-                  <template v-if="form.readings.length === 0">Нажмите чтобы добавить показания</template>
-                  <template v-else>{{ form.readings.length }} строк · нажмите чтобы {{ showReadings ? 'скрыть' : 'редактировать' }}</template>
+                  <template v-if="!form.water_data">Введите показания счётчика — данные рассчитаются</template>
+                  <template v-else-if="form.readings.length === 0">Рассчитывается…</template>
+                  <template v-else>1 замер · нажмите чтобы {{ showReadings ? 'скрыть' : 'посмотреть' }}</template>
                 </p>
               </div>
             </div>
@@ -210,7 +211,6 @@
                   <th colspan="3" class="border border-gray-200 px-2 py-1.5 font-semibold text-center">Qmax (Qн) 1,5 м³/ч</th>
                   <th rowspan="2" class="border border-gray-200 px-2 py-1.5 font-semibold text-center align-middle w-16">До поверки м³</th>
                   <th rowspan="2" class="border border-gray-200 px-2 py-1.5 font-semibold text-center align-middle w-16">После поверки м³</th>
-                  <th rowspan="2" class="border border-gray-200 w-6"></th>
                 </tr>
                 <tr class="bg-gray-50 text-gray-500">
                   <th class="border border-gray-200 px-1.5 py-1 font-medium text-center w-14">Счётчик дм³</th>
@@ -225,40 +225,36 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(row, i) in form.readings" :key="i" class="hover:bg-gray-50">
-                  <td class="border border-gray-200 p-0.5 text-center text-gray-500 text-xs">{{ i + 1 }}</td>
-                  <td class="border border-gray-200 p-0.5"><input v-model="row.dn"      type="text" class="w-full px-1.5 py-1 text-center text-xs outline-none focus:bg-blue-50 rounded" /></td>
-                  <td class="border border-gray-200 p-0.5"><input v-model="row.qmin_s"  type="text" @change="autoCalc(row, 'qmin')"  class="w-full px-1.5 py-1 text-center text-xs outline-none focus:bg-blue-50 rounded" /></td>
-                  <td class="border border-gray-200 p-0.5 bg-gray-50"><input v-model="row.qmin_e"  type="text" readonly class="w-full px-1.5 py-1 text-center text-xs outline-none bg-transparent text-gray-500 cursor-default" /></td>
-                  <td class="border border-gray-200 p-0.5 bg-gray-50"><input v-model="row.qmin_p"  type="text" readonly class="w-full px-1.5 py-1 text-center text-xs outline-none bg-transparent text-gray-500 cursor-default" /></td>
-                  <td class="border border-gray-200 p-0.5"><input v-model="row.qn_s"    type="text" @change="autoCalc(row, 'qn')"    class="w-full px-1.5 py-1 text-center text-xs outline-none focus:bg-blue-50 rounded" /></td>
-                  <td class="border border-gray-200 p-0.5 bg-gray-50"><input v-model="row.qn_e"    type="text" readonly class="w-full px-1.5 py-1 text-center text-xs outline-none bg-transparent text-gray-500 cursor-default" /></td>
-                  <td class="border border-gray-200 p-0.5 bg-gray-50"><input v-model="row.qn_p"    type="text" readonly class="w-full px-1.5 py-1 text-center text-xs outline-none bg-transparent text-gray-500 cursor-default" /></td>
-                  <td class="border border-gray-200 p-0.5"><input v-model="row.qmax_s"  type="text" @change="autoCalc(row, 'qmax')"  class="w-full px-1.5 py-1 text-center text-xs outline-none focus:bg-blue-50 rounded" /></td>
-                  <td class="border border-gray-200 p-0.5 bg-gray-50"><input v-model="row.qmax_e"  type="text" readonly class="w-full px-1.5 py-1 text-center text-xs outline-none bg-transparent text-gray-500 cursor-default" /></td>
-                  <td class="border border-gray-200 p-0.5 bg-gray-50"><input v-model="row.qmax_p"  type="text" readonly class="w-full px-1.5 py-1 text-center text-xs outline-none bg-transparent text-gray-500 cursor-default" /></td>
-                  <td class="border border-gray-200 p-0.5"><input v-model="row.before_val" type="text" class="w-full px-1.5 py-1 text-center text-xs outline-none focus:bg-blue-50 rounded" /></td>
-                  <td class="border border-gray-200 p-0.5"><input v-model="row.after_val"  type="text" class="w-full px-1.5 py-1 text-center text-xs outline-none focus:bg-blue-50 rounded" /></td>
-                  <td class="border border-gray-200 p-0.5 text-center">
-                    <button type="button" @click="removeReadingRow(i)"
-                      class="w-5 h-5 flex items-center justify-center text-gray-300 hover:text-red-400 transition-colors mx-auto">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    </button>
+                <tr v-if="!form.water_data">
+                  <td colspan="13" class="border border-gray-200 px-4 py-4 text-center text-xs text-gray-400">
+                    Введите показания счётчика (м³) — замеры рассчитаются автоматически
                   </td>
                 </tr>
-                <tr v-if="form.readings.length === 0">
-                  <td colspan="15" class="border border-gray-200 px-4 py-3 text-center text-xs text-gray-400">
-                    Нет строк — нажмите «+ Добавить строку»
-                  </td>
-                </tr>
+                <template v-else>
+                  <tr v-for="(row, i) in form.readings" :key="i">
+                    <td class="border border-gray-200 px-2 py-1.5 text-center text-gray-500 text-xs">{{ i + 1 }}</td>
+                    <td class="border border-gray-200 px-2 py-1.5 text-center text-xs text-gray-600">{{ row.dn || '—' }}</td>
+                    <td class="border border-gray-200 px-2 py-1.5 text-center text-xs font-semibold text-gray-800">{{ row.qmin_s }}</td>
+                    <td class="border border-gray-200 px-2 py-1.5 text-center text-xs text-gray-700 bg-blue-50/50">{{ row.qmin_e }}</td>
+                    <td class="border border-gray-200 px-2 py-1.5 text-center text-xs text-gray-500 bg-gray-50">{{ row.qmin_p }}</td>
+                    <td class="border border-gray-200 px-2 py-1.5 text-center text-xs font-semibold text-gray-800">{{ row.qn_s }}</td>
+                    <td class="border border-gray-200 px-2 py-1.5 text-center text-xs text-gray-700 bg-blue-50/50">{{ row.qn_e }}</td>
+                    <td class="border border-gray-200 px-2 py-1.5 text-center text-xs text-gray-500 bg-gray-50">{{ row.qn_p }}</td>
+                    <td class="border border-gray-200 px-2 py-1.5 text-center text-xs font-semibold text-gray-800">{{ row.qmax_s }}</td>
+                    <td class="border border-gray-200 px-2 py-1.5 text-center text-xs text-gray-700 bg-blue-50/50">{{ row.qmax_e }}</td>
+                    <td class="border border-gray-200 px-2 py-1.5 text-center text-xs text-gray-500 bg-gray-50">{{ row.qmax_p }}</td>
+                    <td class="border border-gray-200 px-2 py-1.5 text-center text-xs text-gray-600">{{ row.before_val || '—' }}</td>
+                    <td class="border border-gray-200 px-2 py-1.5 text-center text-xs text-gray-600">{{ row.after_val || '—' }}</td>
+                  </tr>
+                  <tr v-if="form.readings.length === 0">
+                    <td colspan="13" class="border border-gray-200 px-4 py-3 text-center text-xs text-gray-400">
+                      Рассчитывается…
+                    </td>
+                  </tr>
+                </template>
               </tbody>
             </table>
           </div>
-          <button type="button" @click="addReadingRow"
-            class="mt-2 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Добавить строку
-          </button>
         </div>
         </div><!-- /accordion wrapper -->
 
@@ -365,7 +361,7 @@
 
 <script setup>
 import { useForm, usePage } from '@inertiajs/vue3'
-import { computed, defineComponent, h, ref } from 'vue'
+import { computed, defineComponent, h, ref, watch } from 'vue'
 
 const IconDownload = defineComponent({
   render: () => h('svg', { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2.2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
@@ -376,7 +372,8 @@ const IconDownload = defineComponent({
 })
 
 const props = defineProps({
-  cert: { type: Object, default: null },
+  cert:     { type: Object, default: null },
+  copyFrom: { type: Object, default: null },
 })
 
 const page = usePage()
@@ -384,53 +381,62 @@ const flash        = computed(() => page.props.flash ?? {})
 const pdfAvailable = computed(() => page.props.pdfAvailable)
 const isLocal      = computed(() => page.props.isLocal)
 
-const showReadings = ref(false)
+const showReadings = ref(true)
 
-function emptyRow() {
-  return { dn: '', qmin_s: '', qmin_e: '', qmin_p: '', qn_s: '', qn_e: '', qn_p: '', qmax_s: '', qmax_e: '', qmax_p: '', before_val: '', after_val: '' }
-}
-
-function calcEtalonAndErr(counter, maxErr) {
-  const val = parseFloat(counter)
-  if (isNaN(val) || val <= 0) return { e: '', p: '' }
+function randomEtalonAndErr(counterVal, maxErr) {
   const sign = Math.random() > 0.4 ? 1 : -1
   const p    = sign * (Math.random() * maxErr * 0.75 + maxErr * 0.05)
-  const e    = Math.round((val / (1 + p / 100)) * 1000) / 1000
-  const actualP = Math.round(((val - e) / e) * 10000) / 100
-  return { e: e.toString(), p: actualP.toString() }
+  const e    = counterVal / (1 + p / 100)
+  return { e: e.toFixed(4), p: (((counterVal - e) / e) * 100).toFixed(2) }
 }
 
-function autoCalc(row, group) {
-  const maxErr = group === 'qmin' ? 5 : 2
-  const { e, p } = calcEtalonAndErr(row[`${group}_s`], maxErr)
-  row[`${group}_e`] = e
-  row[`${group}_p`] = p
+function ceilToThousandths(valStr) {
+  const n      = parseFloat(valStr)
+  const scaled = n * 1000
+  const nearest = Math.round(scaled)
+  const ceiled  = Math.abs(scaled - nearest) < 1e-6 ? nearest : Math.ceil(scaled)
+  return (ceiled / 1000).toFixed(4)
 }
 
-function addReadingRow() {
-  form.readings.push(emptyRow())
+function generateReadings() {
+  const waterVal = parseFloat(String(form.water_data))
+  if (isNaN(waterVal) || waterVal <= 0) return
+
+  const { e: qmin_e, p: qmin_p } = randomEtalonAndErr(waterVal, 5)
+  const qn_s                      = ceilToThousandths(qmin_e)
+  const { e: qn_e,   p: qn_p }   = randomEtalonAndErr(parseFloat(qn_s), 2)
+  const qmax_s                    = ceilToThousandths(qn_e)
+  const { e: qmax_e, p: qmax_p } = randomEtalonAndErr(parseFloat(qmax_s), 2)
+
+  form.readings = [{
+    dn:         '15',
+    qmin_s:     waterVal.toString(),
+    qmin_e,     qmin_p,
+    qn_s,       qn_e,    qn_p,
+    qmax_s,     qmax_e,  qmax_p,
+    before_val: waterVal.toString(),
+    after_val:  qmax_e,
+  }]
 }
 
-function removeReadingRow(index) {
-  form.readings.splice(index, 1)
-}
+const src = props.cert ?? props.copyFrom ?? {}
 
 const form = useForm({
-  cert_number:         props.cert?.cert_number         ?? 'VM-07-26-',
-  zavod_number:        props.cert?.zavod_number        ?? '',
-  type_model:          props.cert?.type_model          ?? '',
-  manufacturer:        props.cert?.manufacturer        ?? 'ООО "Телематические Решения", г. Москва, Российская Федерация',
-  verification_method: props.cert?.verification_method ?? 'СТ РК 2.86-2005',
-  verifier:            props.cert?.verifier            ?? 'Карабаев А.',
-  make_year:           props.cert?.make_year           ?? '2019г.',
-  fio:                 props.cert?.fio                 ?? '',
-  address:             props.cert?.address             ?? '',
-  phone:               props.cert?.phone               ?? '',
-  water_data:          props.cert?.water_data          ?? '',
-  class:               props.cert?.class               ?? 'В',
-  check_date:          props.cert?.check_date          ?? '',
-  plomb_number:        props.cert?.plomb_number        ?? '',
-  readings: (props.cert?.readings ?? []).map(r => ({
+  cert_number:         src.cert_number         ?? 'VM-07-26-',
+  zavod_number:        src.zavod_number        ?? '',
+  type_model:          src.type_model          ?? '',
+  manufacturer:        src.manufacturer        ?? 'ООО "Телематические Решения", г. Москва, Российская Федерация',
+  verification_method: src.verification_method ?? 'СТ РК 2.86-2005',
+  verifier:            src.verifier            ?? 'Карабаев А.',
+  make_year:           src.make_year           ?? '2019г.',
+  fio:                 src.fio                 ?? '',
+  address:             src.address             ?? '',
+  phone:               src.phone               ?? '',
+  water_data:          src.water_data          ?? '',
+  class:               src.class               ?? 'В',
+  check_date:          src.check_date          ?? '',
+  plomb_number:        src.plomb_number        ?? '',
+  readings: (src.readings ?? []).map(r => ({
     dn:         r.dn         ?? '',
     qmin_s:     r.qmin_s     ?? '',
     qmin_e:     r.qmin_e     ?? '',
@@ -445,6 +451,18 @@ const form = useForm({
     after_val:  r.after_val  ?? '',
   })),
 })
+
+// Пересчитываем замеры при изменении показаний счётчика
+let _genTimer = null
+watch(() => form.water_data, () => {
+  clearTimeout(_genTimer)
+  _genTimer = setTimeout(generateReadings, 600)
+})
+
+// Генерируем сразу при создании нового сертификата (не при редактировании)
+if (!props.cert && parseFloat(String(form.water_data)) > 0) {
+  generateReadings()
+}
 
 const finalDate = computed(() => {
   const match = form.check_date?.match(/^(\d{2})\.(\d{2})\.(\d{4})$/)
