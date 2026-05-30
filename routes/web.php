@@ -19,3 +19,10 @@ Route::get('/certificate/{cert}/garant/word', [CertificateController::class, 'do
 Route::get('/certificate/{cert}/garant/pdf', [CertificateController::class, 'downloadGarantPdf'])->name('certificate.garant.pdf');
 
 Route::post('/certificates/download-zip', [CertificateController::class, 'downloadZip'])->name('certificates.zip');
+
+Route::get('/clients', [\App\Http\Controllers\ClientController::class, 'index'])->name('clients');
+Route::get('/clients/{client}/excerpt', [\App\Http\Controllers\ClientController::class, 'excerpt'])->name('clients.excerpt');
+Route::get('/clients/{client}/meters-certs', [\App\Http\Controllers\ClientController::class, 'metersWithCerts'])->name('clients.meters-certs');
+
+Route::get('/api/clients', [\App\Http\Controllers\ClientController::class, 'search'])->name('api.clients');
+Route::get('/api/meters/{meter}', [\App\Http\Controllers\ClientController::class, 'meterDetails'])->name('api.meter');

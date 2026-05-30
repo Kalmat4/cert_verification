@@ -11,13 +11,22 @@
               ? 'bg-blue-50 text-blue-700'
               : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'"
           >
-            История
+            История поверок
+          </Link>
+          <Link
+            href="/clients"
+            class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
+            :class="isActive('/clients')
+              ? 'bg-blue-50 text-blue-700'
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'"
+          >
+            Пользователи
           </Link>
           <Link
             href="/certificate/create"
             class="ml-2 px-3 py-1.5 rounded-md text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
           >
-            + Добавить
+            Добавить
           </Link>
         </nav>
       </div>

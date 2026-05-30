@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Cert extends Model
@@ -12,18 +13,23 @@ class Cert extends Model
         parent::boot();
 
         static::created(function (self $cert) {
-            $cert->updateQuietly([
+            $cert->forceFill([
                 'garant_number' => $cert->id . ' / ' . str_replace('.', '_', $cert->check_date),
-            ]);
+            ])->saveQuietly();
         });
 
         static::updated(function (self $cert) {
             if ($cert->wasChanged('check_date')) {
-                $cert->updateQuietly([
+                $cert->forceFill([
                     'garant_number' => $cert->id . ' / ' . str_replace('.', '_', $cert->check_date),
-                ]);
+                ])->saveQuietly();
             }
         });
+    }
+
+    public function meter(): BelongsTo
+    {
+        return $this->belongsTo(Meter::class);
     }
 
     public function readings(): HasMany
@@ -32,21 +38,13 @@ class Cert extends Model
     }
 
     protected $fillable = [
+        'meter_id',
         'cert_number',
-        'zavod_number',
-        'garant_number',
-        'type_model',
-        'manufacturer',
         'verification_method',
         'verifier',
-        'make_year',
+        'plomb_number',
         'water_data',
-        'fio',
-        'address',
-        'phone',
-        'class',
         'check_date',
         'final_date',
-        'plomb_number',
     ];
 }
