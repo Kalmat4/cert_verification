@@ -14,6 +14,13 @@
           Вставить рандомные данные
         </button>
         <span v-if="cert" class="text-xs text-gray-400"># {{ cert.id }}</span>
+        <button v-if="cert" type="button" @click="deleteCert"
+          class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-red-300 text-red-600 hover:bg-red-50 transition-colors">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+          </svg>
+          Удалить
+        </button>
       </div>
     </div>
 
@@ -360,7 +367,7 @@
 </template>
 
 <script setup>
-import { useForm, usePage } from '@inertiajs/vue3'
+import { useForm, usePage, router } from '@inertiajs/vue3'
 import { computed, defineComponent, h, ref, watch } from 'vue'
 
 const IconDownload = defineComponent({
@@ -510,6 +517,11 @@ function fillRandom() {
   form.address             = `г. Костанай, ${pick(streets)}`
   form.phone               = `+7 (${phone2}) ${phone3.slice(0,3)}-${phone3.slice(3,5)}-${phone3.slice(5,7)}`
   form.check_date          = `${day}.${month}.${year}`
+}
+
+function deleteCert() {
+  if (!confirm(`Удалить сертификат ${form.cert_number}?\nЭто действие необратимо.`)) return
+  router.delete(`/certificate/${props.cert.id}`)
 }
 
 function submit() {

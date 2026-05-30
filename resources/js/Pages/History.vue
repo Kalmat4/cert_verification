@@ -72,6 +72,10 @@
                     class="px-2.5 py-1 text-xs font-medium rounded-md border border-violet-300 text-violet-700 hover:bg-violet-50 transition-colors">
                     Копировать
                   </button>
+                  <button @click="deleteCert(cert)"
+                    class="px-2.5 py-1 text-xs font-medium rounded-md border border-red-300 text-red-600 hover:bg-red-50 transition-colors">
+                    Удалить
+                  </button>
                 </div>
 
                 <!-- Word -->
@@ -247,6 +251,11 @@ function toggleOne(id) {
 
 function copyAndCreate(cert) {
   router.get('/certificate/create', { copy_id: cert.id })
+}
+
+function deleteCert(cert) {
+  if (!confirm(`Удалить сертификат ${cert.cert_number}?\nЭто действие необратимо.`)) return
+  router.delete(`/certificate/${cert.id}`)
 }
 
 function downloadZip(type, format = 'word') {

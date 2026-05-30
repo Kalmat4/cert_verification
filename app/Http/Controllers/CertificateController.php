@@ -67,6 +67,13 @@ class CertificateController extends Controller
         return Inertia::render('Certificate', ['cert' => $cert->load('readings')]);
     }
 
+    public function destroy(Cert $cert): RedirectResponse
+    {
+        $cert->delete();
+
+        return redirect()->route('history')->with('success', 'Сертификат удалён');
+    }
+
     public function update(Request $request, Cert $cert): RedirectResponse
     {
         $data = $this->validated($request);
