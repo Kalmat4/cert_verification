@@ -40,7 +40,6 @@ class Cert extends Model
     protected $fillable = [
         'meter_id',
         'cert_number',
-        'verification_method',
         'verifier',
         'plomb_number',
         'water_data',

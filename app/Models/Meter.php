@@ -10,9 +10,8 @@ class Meter extends Model
 {
     protected $fillable = [
         'client_id',
+        'type_id',
         'zavod_number',
-        'type_model',
-        'manufacturer',
         'make_year',
         'class',
     ];
@@ -20,6 +19,11 @@ class Meter extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
+    }
+
+    public function meterType(): BelongsTo
+    {
+        return $this->belongsTo(MeterType::class, 'type_id');
     }
 
     public function certs(): HasMany

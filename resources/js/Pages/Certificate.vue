@@ -218,48 +218,68 @@
             <!-- Данные счётчика -->
             <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Данные счётчика</p>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label class="block text-xs font-semibold text-gray-600 mb-1">Номер сертификата</label>
-                <input v-model="form.cert_number" type="text" placeholder="VM-07-26-6206067"
-                  class="w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors"
-                  :class="form.errors.cert_number ? 'border-red-400' : 'border-gray-300 focus:border-blue-500'" />
+            <!-- Тип счётчика из справочника -->
+            <div class="mb-4">
+              <label class="block text-xs font-semibold text-gray-600 mb-1">
+                Тип счётчика
+                <span v-if="form.errors.type_id" class="text-red-500 font-normal ml-1">{{ form.errors.type_id }}</span>
+              </label>
+
+              <!-- Выбран тип — карточка -->
+              <div v-if="selectedMeterType"
+                class="flex items-start justify-between gap-3 px-4 py-3 rounded-lg border border-blue-200 bg-blue-50">
+                <div>
+                  <p class="text-sm font-semibold text-blue-900">{{ selectedMeterType.type_name }}</p>
+                  <p class="text-xs text-blue-700 mt-0.5">{{ selectedMeterType.manufacturer }}</p>
+                  <p class="text-xs text-gray-500 mt-0.5">{{ selectedMeterType.verification_method }}</p>
+                </div>
+                <button type="button" @click="clearMeterType"
+                  class="text-xs text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap mt-0.5">
+                  Сменить
+                </button>
               </div>
-              <div>
+
+              <!-- Поиск типа -->
+              <div v-else class="relative">
+                <svg class="absolute left-3 top-2.5 w-3.5 h-3.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input v-model="typeQuery" @input="handleTypeSearch" type="text"
+                  placeholder="Поиск по названию типа счётчика…"
+                  class="w-full pl-8 pr-3 py-2 border rounded-lg text-sm outline-none transition-colors"
+                  :class="form.errors.type_id ? 'border-red-400' : 'border-gray-300 focus:border-blue-500'" />
+                <span v-if="typeLoading" class="absolute right-3 top-2.5 text-gray-400 text-xs">…</span>
+
+                <!-- Результаты -->
+                <div v-if="typeResults.length"
+                  class="absolute z-30 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+                  <button v-for="t in typeResults" :key="t.id" type="button" @click="pickMeterType(t)"
+                    class="w-full text-left px-3 py-2.5 hover:bg-gray-50 border-b border-gray-100 last:border-0">
+                    <p class="text-sm font-medium text-gray-900">{{ t.type_name }}</p>
+                    <p class="text-xs text-gray-500 mt-0.5">{{ t.manufacturer }} · {{ t.verification_method }}</p>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Заводской номер + класс + год -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+              <div class="sm:col-span-1">
                 <label class="block text-xs font-semibold text-gray-600 mb-1">Заводской номер</label>
                 <input v-model="form.zavod_number" type="text" placeholder="7525449"
                   class="w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors"
                   :class="form.errors.zavod_number ? 'border-red-400' : 'border-gray-300 focus:border-blue-500'" />
               </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label class="block text-xs font-semibold text-gray-600 mb-1">Тип / модель</label>
-                <input v-model="form.type_model" type="text" placeholder="ВСХ-15"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-blue-500 transition-colors" />
-              </div>
-              <div>
-                <label class="block text-xs font-semibold text-gray-600 mb-1">Изготовитель</label>
-                <input v-model="form.manufacturer" type="text" :placeholder="FIELD_DEFAULTS.manufacturer"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-blue-500 transition-colors" />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
               <div>
                 <label class="block text-xs font-semibold text-gray-600 mb-1">Год изготовления</label>
                 <input v-model="form.make_year" type="text" :placeholder="FIELD_DEFAULTS.make_year"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-blue-500 transition-colors" />
-              </div>
-              <div>
-                <label class="block text-xs font-semibold text-gray-600 mb-1">Методика поверки</label>
-                <input v-model="form.verification_method" type="text" :placeholder="FIELD_DEFAULTS.verification_method"
+                  @focus="suggestDefault('make_year')"
                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-blue-500 transition-colors" />
               </div>
               <div>
                 <label class="block text-xs font-semibold text-gray-600 mb-1">Класс</label>
                 <input v-model="form.class" type="text" :placeholder="FIELD_DEFAULTS.class"
+                  @focus="suggestDefault('class')"
                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-blue-500 transition-colors" />
               </div>
             </div>
@@ -517,7 +537,38 @@ const searchLoading = ref(false)
 const clientLocked = ref(!!src)
 const clientMeters = ref(src?.meter?.client?.meters ?? [])
 
-// ── Счётчик / поверка ────────────────────────────
+// ── Тип счётчика (справочник) ─────────────────────
+const selectedMeterType = ref(src?.meter?.meter_type ?? null)
+const typeQuery   = ref('')
+const typeResults = ref([])
+const typeLoading = ref(false)
+
+let _typeTimer = null
+function handleTypeSearch() {
+  clearTimeout(_typeTimer)
+  typeResults.value = []
+  if (typeQuery.value.trim().length < 1) return
+  _typeTimer = setTimeout(async () => {
+    typeLoading.value = true
+    const res = await fetch(`/api/meter-types?q=${encodeURIComponent(typeQuery.value.trim())}`)
+    typeResults.value = await res.json()
+    typeLoading.value = false
+  }, 250)
+}
+
+function pickMeterType(t) {
+  form.type_id       = t.id
+  selectedMeterType.value = t
+  typeResults.value  = []
+  typeQuery.value    = ''
+}
+
+function clearMeterType() {
+  form.type_id       = null
+  selectedMeterType.value = null
+}
+
+// ── Счётчик / поверка ─────────────────────────────
 const showMeterSection = ref(!!src)
 const showReadings = ref(true)
 
@@ -542,16 +593,13 @@ const form = useForm({
   verifier: src?.verifier ?? '',
 
   // Meter — fallback через прямую FK-колонку cert.meter_id
-  meter_id: src?.meter?.id ?? src?.meter_id ?? null,
-  zavod_number: src?.meter?.zavod_number ?? '',
-  type_model: src?.meter?.type_model ?? '',
-  manufacturer: src?.meter?.manufacturer ?? '',
-  make_year: src?.meter?.make_year ?? '',
-  class: src?.meter?.class ?? '',
+  meter_id:     src?.meter?.id            ?? src?.meter_id ?? null,
+  type_id:      src?.meter?.type_id       ?? src?.meter?.meter_type?.id ?? null,
+  zavod_number: src?.meter?.zavod_number  ?? '',
+  make_year:    src?.meter?.make_year     ?? '',
+  class:        src?.meter?.class         ?? '',
 
-  // Cert
-  cert_number: src?.cert_number ?? '',
-  verification_method: src?.verification_method ?? '',
+  // Cert (cert_number генерируется на бэкенде при создании)
   plomb_number: src?.plomb_number ?? '',
   water_data: src?.water_data ?? '',
   check_date: src?.check_date ?? todayDMY(),
@@ -706,21 +754,24 @@ function unlockClient() {
 
 // ── Meter selection ───────────────────────────────
 async function pickMeter(meter) {
-  form.meter_id = meter.id
+  form.meter_id     = meter.id
   form.zavod_number = meter.zavod_number
-  form.type_model = meter.type_model ?? ''
-  form.manufacturer = meter.manufacturer ?? ''
-  form.make_year = meter.make_year ?? ''
-  form.class = meter.class ?? ''
+  form.make_year    = meter.make_year ?? ''
+  form.class        = meter.class     ?? ''
 
   try {
-    const res = await fetch(`/api/meters/${meter.id}`)
+    const res  = await fetch(`/api/meters/${meter.id}`)
     const data = await res.json()
+
+    // Тип из справочника
+    if (data.type_id) {
+      form.type_id = data.type_id
+      selectedMeterType.value = data.meter_type ?? null
+    }
 
     if (data.last_cert) {
       const c = data.last_cert
-      form.cert_number = c.cert_number ?? ''
-      form.verification_method = c.verification_method ?? ''
+
       form.plomb_number = c.plomb_number ?? ''
       // Ставим флаг ДО изменения water_data, чтобы watcher не запустил пересчёт
       _skipNextGenerate = true
@@ -734,18 +785,16 @@ async function pickMeter(meter) {
 }
 
 function clearMeter() {
-  form.meter_id = null
+  form.meter_id     = null
+  form.type_id      = null
   form.zavod_number = ''
-  form.type_model = ''
-  form.manufacturer = ''
-  form.make_year = ''
-  form.class = ''
-  form.cert_number = ''
-  form.verification_method = ''
+  form.make_year    = ''
+  form.class        = ''
   form.plomb_number = ''
-  form.water_data = ''
-  form.check_date = todayDMY()
-  form.readings = []
+  form.water_data   = ''
+  form.check_date   = todayDMY()
+  form.readings     = []
+  selectedMeterType.value = null
 }
 
 // ── Computed ──────────────────────────────────────
@@ -775,12 +824,9 @@ function triggerDl()  {
 
 // ── Helpers ───────────────────────────────────────
 const FIELD_DEFAULTS = {
-  verifier: 'Карабаев А.',
-  manufacturer: 'ООО "Телематические Решения", г. Москва, Российская Федерация',
+  verifier:  'Карабаев А.',
   make_year: '2019г.',
-  class: 'В',
-  cert_number: 'VM-07-26-',
-  verification_method: 'СТ РК 2.86-2005',
+  class:     'В',
 }
 
 function suggestDefault(field) {
@@ -799,7 +845,7 @@ function formatDate(e) {
 }
 
 function deleteCert() {
-  if (!confirm(`Удалить сертификат ${form.cert_number}?\nЭто действие необратимо.`)) return
+  if (!confirm(`Удалить сертификат ${props.cert?.cert_number ?? ''}?\nЭто действие необратимо.`)) return
   router.delete(`/certificate/${props.cert.id}`)
 }
 

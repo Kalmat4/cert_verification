@@ -76,7 +76,9 @@ class CertificateController extends Controller
     public function edit(Cert $cert): Response
     {
         $cert->load([
+            'meter.meterType',
             'meter.client.meters' => fn ($q) => $q->with([
+                'meterType',
                 'certs' => fn ($q2) => $q2->orderByDesc('id')->select('id', 'cert_number', 'check_date', 'meter_id'),
             ]),
             'readings',
@@ -93,6 +95,8 @@ class CertificateController extends Controller
     public function store(Request $request): RedirectResponse
     {
         [$client, $meter, $certData] = $this->resolveClientMeterCert($request);
+
+        $certData['cert_number'] = 'VM-07-26-' . random_int(1000000, 9999999);
 
         $cert = Cert::create(array_merge($certData, ['meter_id' => $meter->id]));
         $this->syncReadings($cert, $request->input('readings', []));
@@ -115,6 +119,9 @@ class CertificateController extends Controller
         }
 
         [$client, $meter, $certData] = $this->resolveClientMeterCert($request);
+
+        // cert_number не меняем при обновлении
+        unset($certData['cert_number']);
 
         $cert->update(array_merge($certData, ['meter_id' => $meter->id]));
         $this->syncReadings($cert, $request->input('readings', []));
@@ -283,25 +290,25 @@ class CertificateController extends Controller
     private function resolveClientMeterCert(Request $request, ?Cert $existing = null): array
     {
         $data = $request->validate([
-            'client_id'          => ['nullable', 'exists:clients,id'],
-            'fio'                => ['required'],
-            'address'            => ['required'],
-            'phone'              => ['nullable'],
-            'meter_id'           => ['nullable', 'exists:meters,id'],
-            'zavod_number'       => ['required'],
-            'type_model'         => ['nullable'],
-            'manufacturer'       => ['nullable'],
-            'make_year'          => ['nullable'],
-            'class'              => ['nullable'],
-            'cert_number'        => ['required'],
-            'verification_method'=> ['nullable'],
-            'verifier'           => ['nullable'],
-            'plomb_number'       => ['required'],
-            'water_data'         => ['required', 'numeric'],
-            'check_date'         => ['required', 'date_format:d.m.Y'],
+            'client_id'    => ['nullable', 'exists:clients,id'],
+            'fio'          => ['required'],
+            'address'      => ['required'],
+            'phone'        => ['nullable'],
+            'meter_id'     => ['nullable', 'exists:meters,id'],
+            'type_id'      => ['required', 'exists:meter_types,id'],
+            'zavod_number' => ['required'],
+            'make_year'    => ['nullable'],
+            'class'        => ['nullable'],
+            'cert_number'  => ['nullable'],
+            'verifier'     => ['nullable'],
+            'plomb_number' => ['required'],
+            'water_data'   => ['required', 'numeric'],
+            'check_date'   => ['required', 'date_format:d.m.Y'],
         ], [
             'check_date.date_format' => 'Дата поверки: формат ДД.ММ.ГГГГ',
             'water_data.numeric'     => 'Показания счётчика должны быть числом',
+            'type_id.required'       => 'Выберите тип счётчика из справочника',
+            'type_id.exists'         => 'Выбранный тип счётчика не найден',
         ]);
 
         // Client
@@ -313,33 +320,29 @@ class CertificateController extends Controller
         }
 
         // Meter
+        $meterFields = [
+            'type_id'      => $data['type_id'],
+            'zavod_number' => $data['zavod_number'],
+            'make_year'    => $data['make_year']    ?? null,
+            'class'        => $data['class']        ?? null,
+        ];
         if ($data['meter_id'] ?? null) {
             $meter = Meter::findOrFail($data['meter_id']);
-            $meter->update([
-                'zavod_number' => $data['zavod_number'],
-                'type_model'   => $data['type_model']   ?? null,
-                'manufacturer' => $data['manufacturer'] ?? null,
-                'make_year'    => $data['make_year']    ?? null,
-                'class'        => $data['class']        ?? null,
-            ]);
+            $meter->update($meterFields);
         } else {
-            $meter = $client->meters()->create([
-                'zavod_number' => $data['zavod_number'],
-                'type_model'   => $data['type_model']   ?? null,
-                'manufacturer' => $data['manufacturer'] ?? null,
-                'make_year'    => $data['make_year']    ?? null,
-                'class'        => $data['class']        ?? null,
-            ]);
+            $meter = $client->meters()->create($meterFields);
         }
 
+        // Интервал поверки из справочника
+        $meterType    = \App\Models\MeterType::find($data['type_id']);
+        $intervalYears = $meterType?->verify_interval_years ?? 5;
+
         $certData = [
-            'cert_number'         => $data['cert_number'],
-            'verification_method' => $data['verification_method'] ?? null,
-            'verifier'            => $data['verifier']            ?? null,
-            'plomb_number'        => $data['plomb_number'],
-            'water_data'          => $data['water_data'],
-            'check_date'          => $data['check_date'],
-            'final_date'          => Carbon::createFromFormat('d.m.Y', $data['check_date'])->addYears(5)->format('d.m.Y'),
+            'verifier'    => $data['verifier']    ?? null,
+            'plomb_number'=> $data['plomb_number'],
+            'water_data'  => $data['water_data'],
+            'check_date'  => $data['check_date'],
+            'final_date'  => Carbon::createFromFormat('d.m.Y', $data['check_date'])->addYears($intervalYears)->format('d.m.Y'),
         ];
 
         return [$client, $meter, $certData];
@@ -350,19 +353,21 @@ class CertificateController extends Controller
      */
     private function certToDocxData(Cert $cert): array
     {
-        $cert->loadMissing('meter.client', 'readings');
-        $meter  = $cert->meter;
-        $client = $meter?->client;
+        $cert->loadMissing('meter.client', 'meter.meterType', 'readings');
+        $meter     = $cert->meter;
+        $client    = $meter?->client;
+        $meterType = $meter?->meterType;
 
         return array_merge($cert->toArray(), [
-            'fio'          => $client?->fio          ?? '',
-            'address'      => $client?->address      ?? '',
-            'phone'        => $client?->phone        ?? '',
-            'zavod_number' => $meter?->zavod_number  ?? '',
-            'type_model'   => $meter?->type_model    ?? '',
-            'manufacturer' => $meter?->manufacturer  ?? '',
-            'make_year'    => $meter?->make_year     ?? '',
-            'class'        => $meter?->class         ?? '',
+            'fio'                 => $client?->fio                        ?? '',
+            'address'             => $client?->address                    ?? '',
+            'phone'               => $client?->phone                      ?? '',
+            'zavod_number'        => $meter?->zavod_number                ?? '',
+            'type_model'          => $meterType?->type_name               ?? '',
+            'manufacturer'        => $meterType?->manufacturer            ?? '',
+            'verification_method' => $meterType?->verification_method     ?? '',
+            'make_year'           => $meter?->make_year                   ?? '',
+            'class'               => $meter?->class                       ?? '',
         ]);
     }
 

@@ -21,8 +21,14 @@ Route::get('/certificate/{cert}/garant/pdf', [CertificateController::class, 'dow
 Route::post('/certificates/download-zip', [CertificateController::class, 'downloadZip'])->name('certificates.zip');
 
 Route::get('/clients', [\App\Http\Controllers\ClientController::class, 'index'])->name('clients');
+
+Route::get('/meter-types', [\App\Http\Controllers\MeterTypeController::class, 'index'])->name('meter-types');
+Route::post('/meter-types', [\App\Http\Controllers\MeterTypeController::class, 'store'])->name('meter-types.store');
+Route::put('/meter-types/{meterType}', [\App\Http\Controllers\MeterTypeController::class, 'update'])->name('meter-types.update');
+Route::delete('/meter-types/{meterType}', [\App\Http\Controllers\MeterTypeController::class, 'destroy'])->name('meter-types.destroy');
 Route::get('/clients/{client}/excerpt', [\App\Http\Controllers\ClientController::class, 'excerpt'])->name('clients.excerpt');
 Route::get('/clients/{client}/meters-certs', [\App\Http\Controllers\ClientController::class, 'metersWithCerts'])->name('clients.meters-certs');
 
 Route::get('/api/clients', [\App\Http\Controllers\ClientController::class, 'search'])->name('api.clients');
+Route::get('/api/meter-types', [\App\Http\Controllers\ClientController::class, 'meterTypeSearch'])->name('api.meter-types');
 Route::get('/api/meters/{meter}', [\App\Http\Controllers\ClientController::class, 'meterDetails'])->name('api.meter');

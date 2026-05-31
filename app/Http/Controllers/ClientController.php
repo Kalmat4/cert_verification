@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Client;
 use App\Models\Meter;
+use App\Models\MeterType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -72,15 +73,28 @@ class ClientController extends Controller
         ]);
     }
 
+    public function meterTypeSearch(Request $request): JsonResponse
+    {
+        $q = trim($request->input('q', ''));
+
+        $types = MeterType::when($q, fn ($query) => $query->where('type_name', 'like', "%{$q}%"))
+            ->orderBy('type_name')
+            ->limit(20)
+            ->get();
+
+        return response()->json($types);
+    }
+
     public function meterDetails(Meter $meter): JsonResponse
     {
+        $meter->load('meterType');
         $lastCert = $meter->certs()->with('readings')->orderByDesc('id')->first();
 
         return response()->json([
             'id'           => $meter->id,
             'zavod_number' => $meter->zavod_number,
-            'type_model'   => $meter->type_model   ?? '',
-            'manufacturer' => $meter->manufacturer ?? '',
+            'type_id'      => $meter->type_id,
+            'meter_type'   => $meter->meterType,
             'make_year'    => $meter->make_year    ?? '',
             'class'        => $meter->class        ?? '',
             'last_cert'    => $lastCert ? [
