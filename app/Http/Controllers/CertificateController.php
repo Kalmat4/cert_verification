@@ -338,12 +338,17 @@ class CertificateController extends Controller
         $intervalYears = $meterType?->verify_interval_years ?? 5;
 
         $certData = [
-            'verifier'    => $data['verifier']    ?? null,
             'plomb_number'=> $data['plomb_number'],
             'water_data'  => $data['water_data'],
             'check_date'  => $data['check_date'],
             'final_date'  => Carbon::createFromFormat('d.m.Y', $data['check_date'])->addYears($intervalYears)->format('d.m.Y'),
         ];
+
+        // Пустой поверитель не передаём: колонка NOT NULL с умолчанием «Карабаев А.» —
+        // при создании подставится оно, при редактировании останется прежний
+        if (filled($data['verifier'] ?? null)) {
+            $certData['verifier'] = $data['verifier'];
+        }
 
         return [$client, $meter, $certData];
     }
